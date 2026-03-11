@@ -112,6 +112,8 @@ const App: React.FC = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showVolumePopup, setShowVolumePopup] = useState(false);
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateVersion, setUpdateVersion] = useState("");
   const [volume, setVolume] = useState(1);
   const [showSpeedIndicator, setShowSpeedIndicator] = useState(false);
   const speedIndicatorTimerRef = useRef<number | null>(null);
