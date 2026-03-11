@@ -1,76 +1,71 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- 金属质感渐变 -->
-    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#E8E8E8;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#C0C0C0;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#A0A0A0;stop-opacity:1" />
+    <!-- 深邃背景渐变 -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2a2a2a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f0f0f;stop-opacity:1" />
     </linearGradient>
-    
-    <!-- 光带渐变 -->
-    <linearGradient id="lightBand" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#FFF5E1;stop-opacity:0.3" />
-      <stop offset="50%" style="stop-color:#FFE4B5;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#FFF5E1;stop-opacity:0.3" />
+
+    <!-- 金属银色渐变 (头梁和耳罩连接处) -->
+    <linearGradient id="silverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fcfcfc;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#999999;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#666666;stop-opacity:1" />
     </linearGradient>
-    
-    <!-- 辉光 -->
-    <filter id="lightGlow">
-      <feGaussianBlur stdDeviation="20" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+
+    <!-- 主体黑色渐变 (皮革/磨砂质感) -->
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#333333;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- 呼吸灯核心 -->
+    <linearGradient id="glowPulse" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.2" />
+      <stop offset="50%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.2" />
+    </linearGradient>
+
+    <!-- 辉光滤镜 -->
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="35" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
     </filter>
   </defs>
+
+  <!-- 背景底座 (带圆角的深色块) -->
+  <rect width="1024" height="1024" fill="url(#bgGrad)" rx="240"/>
   
-  <!-- 背景 -->
-  <rect width="1024" height="1024" fill="#1A1A1A" rx="180"/>
-  
-  <!-- 耳机头带 -->
-  <path d="M 360 400 
-           Q 360 240, 512 240 
-           Q 664 240, 664 400" 
-        stroke="url(#metalGrad)" 
-        stroke-width="32" 
+  <!-- 装饰阴影 -->
+  <circle cx="512" cy="540" r="400" fill="black" opacity="0.4" filter="url(#softGlow)"/>
+
+  <!-- 耳机头梁 (弧形) -->
+  <path d="M 320 480 
+           C 320 220, 704 220, 704 480" 
+        stroke="url(#silverGrad)" 
+        stroke-width="56" 
         stroke-linecap="round"
         fill="none"/>
   
-  <!-- 左耳罩 -->
-  <rect x="280" y="480" width="120" height="200" rx="60" 
-        fill="url(#metalGrad)" 
-        stroke="#808080" 
-        stroke-width="4"/>
-  
-  <!-- 右耳罩 -->
-  <rect x="624" y="480" width="120" height="200" rx="60" 
-        fill="url(#metalGrad)" 
-        stroke="#808080" 
-        stroke-width="4"/>
-  
-  <!-- 发光光带 -->
-  <g filter="url(#lightGlow)">
-    <path d="M 400 580 
-             Q 512 560, 624 580" 
-          stroke="url(#lightBand)" 
-          stroke-width="16" 
-          stroke-linecap="round"
-          fill="none"
-          opacity="0.9"/>
-    
-    <!-- 光带末端形成 L -->
-    <path d="M 624 580 
-             L 680 580 
-             L 680 680 
-             L 720 680" 
-          stroke="url(#lightBand)" 
-          stroke-width="12" 
-          stroke-linecap="round"
-          fill="none"
-          opacity="0.8"/>
+  <!-- 耳机主体框架 (增强体积感) -->
+  <g>
+    <!-- 左耳罩 (倾斜角度更具动感) -->
+    <rect x="220" y="460" width="140" height="240" rx="70" fill="url(#bodyGrad)" stroke="#444" stroke-width="2"/>
+    <path d="M 290 510 L 290 610" stroke="white" stroke-width="2" opacity="0.1" stroke-linecap="round"/>
+
+    <!-- 右耳罩 -->
+    <rect x="664" y="460" width="140" height="240" rx="70" fill="url(#bodyGrad)" stroke="#444" stroke-width="2"/>
+    <path d="M 734 510 L 734 610" stroke="white" stroke-width="2" opacity="0.1" stroke-linecap="round"/>
   </g>
-  
-  <!-- 光点 -->
-  <circle cx="512" cy="570" r="12" fill="#FFE4B5" opacity="0.9"/>
+
+  <!-- 艺术化 Lumison L 标识 (由发光动效组成) -->
+  <g filter="url(#softGlow)">
+    <!-- L 的垂直部分 -->
+    <rect x="495" y="440" width="34" height="160" rx="17" fill="url(#glowPulse)" opacity="0.8"/>
+    <!-- L 的水平部分 (带一点上扬) -->
+    <path d="M 512 580 L 590 580 Q 610 580, 610 560" stroke="white" stroke-width="34" stroke-linecap="round" fill="none" opacity="0.9"/>
+  </g>
+
+  <!-- 高级质感：顶部高光点 -->
+  <circle cx="512" cy="300" r="6" fill="white" opacity="0.5"/>
 </svg>
