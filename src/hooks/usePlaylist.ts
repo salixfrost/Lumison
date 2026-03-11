@@ -5,7 +5,6 @@ import {
   parseAudioMetadata,
   parseNeteaseLink,
 } from "../services/utils";
-import { parseLyrics } from "../services/lyrics";
 import {
   fetchNeteasePlaylist,
   fetchNeteaseSong,
@@ -15,7 +14,7 @@ import {
   fetchAudioFromUrl,
 } from "../services/music/audioStreamService";
 import { audioResourceCache } from "../services/cache";
-import { extractEmbeddedLyrics, findMatchingLRCFile, loadLRCFile, getLyricsPriority } from "../services/lyrics/id3Parser";
+import { extractEmbeddedLyrics, findMatchingLRCFile, loadLRCFile } from "../services/lyrics/id3Parser";
 
 export interface ImportResult {
   success: boolean;
@@ -47,15 +46,17 @@ export const usePlaylist = () => {
 
   const removeSongs = useCallback((ids: string[]) => {
     if (ids.length === 0) return;
+    const idSet = new Set(ids);
+
     setQueue((prev) => {
       prev.forEach((song) => {
-        if (ids.includes(song.id) && song.fileUrl && !song.fileUrl.startsWith("blob:")) {
+        if (idSet.has(song.id) && song.fileUrl && !song.fileUrl.startsWith("blob:")) {
           audioResourceCache.delete(song.fileUrl);
         }
       });
-      return prev.filter((song) => !ids.includes(song.id));
+      return prev.filter((song) => !idSet.has(song.id));
     });
-    setOriginalQueue((prev) => prev.filter((song) => !ids.includes(song.id)));
+    setOriginalQueue((prev) => prev.filter((song) => !idSet.has(song.id)));
   }, []);
 
   const addLocalFiles = useCallback(
@@ -77,20 +78,6 @@ export const usePlaylist = () => {
       });
 
       const newSongs: Song[] = [];
-
-      // Build lyrics map
-      const lyricsMap = new Map<string, File>();
-      lyricsFiles.forEach((file) => {
-        const basename = file.name.replace(/\.[^/.]+$/, "");
-        const firstDashIndex = basename.indexOf("-");
-
-        let title = firstDashIndex > 0 && firstDashIndex < basename.length - 1
-          ? basename.substring(firstDashIndex + 1).trim()
-          : basename;
-
-        title = title.replace(/[\(\[]?\d{7,9}[\)\]]?/g, "").trim();
-        lyricsMap.set(title.toLowerCase(), file);
-      });
 
       // 并行处理所有音频文件（优化性能）
       const processingPromises = audioFiles.map(async (file, i) => {

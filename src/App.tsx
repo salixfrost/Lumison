@@ -7,7 +7,7 @@ import ShaderBackground4 from "./components/ShaderBackground4";
 import ShaderBackground5 from "./components/ShaderBackground5";
 import FluidBackground from "./components/FluidBackground";
 import Controls from "./components/Controls";
-import LyricsView from "./components/LyricsViewSimple";
+import LyricsView from "./components/LyricsView";
 import PlaylistPanel from "./components/PlaylistPanel";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import TopBar from "./components/TopBar";
