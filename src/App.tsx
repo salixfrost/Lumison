@@ -19,7 +19,6 @@ import { useTheme } from "./contexts/ThemeContext";
 import { useI18n } from "./contexts/I18nContext";
 import { getSupportedAudioFormats } from "./services/utils";
 import { usePerformanceOptimization, useOptimizedAudio } from "./hooks/usePerformanceOptimization";
-import { useGaplessPlayback } from "./hooks/useAudioTransition";
 import { UpdateService } from "./services/updateService";
 import { getPlatformConfig } from "./services/music/multiPlatformLyrics";
 import { PlayState, Song } from "./types";
@@ -156,9 +155,6 @@ const App: React.FC = () => {
 
   // Optimize audio element
   useOptimizedAudio(audioRef);
-
-  // Gapless playback hook
-  const gaplessPlayback = useGaplessPlayback(audioRef, gaplessEnabled);
 
   // Speed change handler with indicator
   const handleSpeedChange = (newSpeed: number) => {
@@ -304,25 +300,10 @@ const App: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Handle song changes with gapless playback
+  // Handle song changes (auto-play, etc)
   useEffect(() => {
     if (!currentSong || !audioRef.current) return;
-
-    // Preload next track for gapless playback
-    if (gaplessEnabled && playlist.queue.length > 0) {
-      const currentIndex = playlist.queue.findIndex(s => s.id === currentSong.id);
-      const nextIndex = (currentIndex + 1) % playlist.queue.length;
-      const nextSong = playlist.queue[nextIndex];
-
-      if (nextSong && nextSong.fileUrl) {
-        // Preload when 80% of current song is played
-        const preloadTime = duration * 0.8;
-        if (currentTime >= preloadTime && !gaplessPlayback.isPreloading()) {
-          gaplessPlayback.preloadNextTrack(nextSong.fileUrl);
-        }
-      }
-    }
-  }, [currentSong, gaplessEnabled, currentTime, duration, audioRef, gaplessPlayback, playlist.queue]);
+  }, [currentSong, audioRef]);
 
   const handleFileChange = async (files: FileList) => {
     const wasEmpty = playlist.queue.length === 0;
