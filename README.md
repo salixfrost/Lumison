@@ -6,72 +6,125 @@ English | [简体中文](README.zh-CN.md)
 
 ![Lumison Logo](public/icon.svg)
 
-**A high-fidelity music player with immersive visual experience**
+**A minimalist music player with immersive visuals, synced lyrics, and desktop packaging via Tauri.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-blue.svg)](https://tauri.app/)
-[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://reactjs.org/)
+[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 
-[Live Demo](https://salixjfrost.github.io/Lumison/) • [Download](https://github.com/SalixJFrost/Lumison/releases) • [Documentation](docs/)
+[Live Demo](https://salixfrost.github.io/lumison/) • [Releases](https://github.com/SalixJFrost/Lumison/releases)
 
 </div>
 
 ---
 
+## Overview
+
+Lumison is a music player focused on playback, lyrics, and atmosphere instead of a crowded feature surface. The current UI is intentionally streamlined: dark theme only, two background modes, lightweight controls, and a cleaner settings flow.
+
 ## Features
 
-- **High-fidelity playback** - Support for MP3, FLAC, WAV, OGG, M4A and more
-- **Fluid animations** - Dynamic background responding to music and album art
-- **Synchronized lyrics** - Smooth scrolling with physics-based animations
-- **Glassmorphism UI** - Modern frosted glass design with backdrop blur
-- **Multi-source search** - Netease Cloud Music, Internet Archive, local files
-- **Auto-update** - Silent checking with elegant notification
-- **Performance optimized** - Hardware acceleration, adaptive quality
-- **Cross-platform** - Windows, macOS, Linux, Android, Web
+- Local audio playback with common formats such as MP3, FLAC, WAV, OGG, and M4A
+- Two visual background modes: `Fluid` and `Melt`
+- Synced lyrics view with adjustable font size
+- Multi-source music import and search support
+- Album art extraction and dynamic color response
+- Desktop app packaging with Tauri 2
+- Automatic update checks for desktop builds
+- Responsive layout for desktop and mobile web
 
-## Installation
+## Current Product Direction
 
-Download from [Releases](https://github.com/SalixJFrost/Lumison/releases) or try the [web version](https://salixjfrost.github.io/Lumison/).
+- Theme is fixed to dark mode
+- Lab / experimental panel has been removed
+- Extra background effects have been removed
+- Gapless playback controls have been removed from the UI
+- Playback settings are kept intentionally minimal
 
 ## Development
 
+### Requirements
+
+- Node.js 20+
+- npm
+- Rust toolchain and Tauri prerequisites for desktop builds
+
+### Install
+
 ```bash
-# Install dependencies
 npm install
+```
 
-# Start dev server
+### Run Web Dev Server
+
+```bash
 npm run dev
+```
 
-# Build desktop app
+### Build Web Version
+
+```bash
+npm run build
+```
+
+### Build Desktop App
+
+```bash
 npm run tauri:build
+```
+
+### Regenerate App Icons
+
+```bash
+npm run generate:all-icons
 ```
 
 ## Tech Stack
 
-- **Frontend**: React 19, TypeScript 5.8, Tailwind CSS
-- **Desktop**: Tauri 2.0, Rust
-- **Build**: Vite 6.2
+- React 19
+- TypeScript 5.8
+- Vite 6
+- Tailwind CSS 3
+- Tauri 2
+- Rust
+- react-spring
 
-## Documentation
+## Project Structure
 
-- [Album Mode](docs/ALBUM_MODE.md)
-- [Performance Guide](docs/PERFORMANCE_OPTIMIZATION.md)
-- [Update Setup](docs/UPDATE_SETUP.md)
-- [Changelog](CHANGELOG.md)
+```text
+src/
+	components/     UI components
+	contexts/       React context providers
+	hooks/          Custom hooks
+	i18n/           Localization resources
+	services/       Audio, music, lyrics, and UI services
+	utils/          Shared utilities
+src-tauri/
+	src/            Tauri backend entrypoints
+	icons/          App icon sources
+public/           Static assets
+scripts/          Utility scripts
+```
+
+## Notes
+
+- The web build is deployed to GitHub Pages.
+- The desktop build uses Tauri-specific APIs where available.
+- If GitHub Pages appears to load an old bundle, force-refresh the browser cache.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License.
 
 ## Credits
 
-Inspired by Apple Music • Shader by [wdyczG](https://www.shadertoy.com/view/wdyczG)
+Inspired by Apple Music.
 
 ---
 
 <div align="center">
 
-**Made with ❤️**
+Made with care.
 
 </div>
