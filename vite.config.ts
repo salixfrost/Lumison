@@ -37,7 +37,7 @@ function manifestPlugin(base: string): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   const isTauri = process.env.TAURI_ENV_PLATFORM !== undefined;
-  const base = isTauri ? '/' : '/lumison/';
+  const base = isTauri ? '/' : './';
 
   return {
     // Use root path for Tauri, repo name for GitHub Pages
