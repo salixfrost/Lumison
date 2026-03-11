@@ -1,9 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useToast } from "./hooks/useToast";
 import ShaderBackground from "./components/ShaderBackground";
-import ShaderBackground2 from "./components/ShaderBackground2";
-import ShaderBackground3 from "./components/ShaderBackground3";
-import ShaderBackground4 from "./components/ShaderBackground4";
 import ShaderBackground5 from "./components/ShaderBackground5";
 import FluidBackground from "./components/FluidBackground";
 import Controls from "./components/Controls";
@@ -33,12 +30,12 @@ const App: React.FC = () => {
   const { toast } = useToast();
   const { theme } = useTheme();
   const { t } = useI18n();
-  
+
   // Performance monitoring
   usePerformanceOptimization();
   useWebViewOptimization();
   useOptimizedBackdropFilter(true);
-  
+
   // Log supported audio formats and platform config on app start
   useEffect(() => {
     // Log supported audio formats
@@ -47,7 +44,7 @@ const App: React.FC = () => {
     Object.entries(formats).forEach(([format, supported]) => {
       console.log(`   ${supported ? '✅' : '❌'} ${format.toUpperCase()}`);
     });
-    
+
     // Log lyrics platform configuration
     const platformConfig = getPlatformConfig();
     console.log('\n🎵 Lyrics Platform Configuration:');
@@ -77,7 +74,7 @@ const App: React.FC = () => {
 
     checkUpdates();
   }, []);
-  
+
   const playlist = usePlaylist();
   const player = usePlayer({
     queue: playlist.queue,
@@ -134,9 +131,9 @@ const App: React.FC = () => {
     return window.innerWidth;
   });
   const [lyricsFontSize, setLyricsFontSize] = useState(46);
-  
+
   // Background type state
-  const [backgroundType, setBackgroundType] = useState<'fluid' | 'shader1' | 'shader2' | 'shader3' | 'shader4' | 'shader5'>('shader4');
+  const [backgroundType, setBackgroundType] = useState<'fluid' | 'shader1' | 'shader5'>('shader5');
 
   // Gapless playback - experimental feature
   const [gaplessEnabled, setGaplessEnabled] = useState(false);
@@ -147,17 +144,17 @@ const App: React.FC = () => {
 
   // View mode state - 'default' or 'lyrics'
   const [viewMode, setViewMode] = useState<'default' | 'lyrics'>('default');
-  
+
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   // Exit button visibility state for lyrics mode
   const [showExitButton, setShowExitButton] = useState(true);
   const exitButtonTimerRef = useRef<number | null>(null);
 
   // Track if user has ever played (to keep layout split after first play)
   const [hasEverPlayed, setHasEverPlayed] = useState(false);
-  
+
   // Update hasEverPlayed when playing starts with lyrics
   useEffect(() => {
     if (playState === PlayState.PLAYING && currentSong?.lyrics && currentSong.lyrics.length > 0) {
@@ -174,15 +171,15 @@ const App: React.FC = () => {
   // Speed change handler with indicator
   const handleSpeedChange = (newSpeed: number) => {
     player.setSpeed(newSpeed);
-    
+
     // Show speed indicator
     setShowSpeedIndicator(true);
-    
+
     // Clear existing timer
     if (speedIndicatorTimerRef.current) {
       window.clearTimeout(speedIndicatorTimerRef.current);
     }
-    
+
     // Hide after 1.5 seconds
     speedIndicatorTimerRef.current = window.setTimeout(() => {
       setShowSpeedIndicator(false);
@@ -225,14 +222,14 @@ const App: React.FC = () => {
 
     // Show button and start timer when entering lyrics mode
     setShowExitButton(true);
-    
+
     const resetTimer = () => {
       if (exitButtonTimerRef.current) {
         window.clearTimeout(exitButtonTimerRef.current);
       }
-      
+
       setShowExitButton(true);
-      
+
       exitButtonTimerRef.current = window.setTimeout(() => {
         setShowExitButton(false);
       }, 5000);
@@ -247,7 +244,7 @@ const App: React.FC = () => {
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       if (exitButtonTimerRef.current) {
@@ -324,7 +321,7 @@ const App: React.FC = () => {
       const currentIndex = playlist.queue.findIndex(s => s.id === currentSong.id);
       const nextIndex = (currentIndex + 1) % playlist.queue.length;
       const nextSong = playlist.queue[nextIndex];
-      
+
       if (nextSong && nextSong.fileUrl) {
         // Preload when 80% of current song is played
         const preloadTime = duration * 0.8;
@@ -535,24 +532,6 @@ const App: React.FC = () => {
           colors={currentSong?.colors || []}
         />
       )}
-      {backgroundType === 'shader2' && (
-        <ShaderBackground2
-          isPlaying={playState === PlayState.PLAYING}
-          colors={currentSong?.colors || []}
-        />
-      )}
-      {backgroundType === 'shader3' && (
-        <ShaderBackground3
-          isPlaying={playState === PlayState.PLAYING}
-          colors={currentSong?.colors || []}
-        />
-      )}
-      {backgroundType === 'shader4' && (
-        <ShaderBackground4
-          isPlaying={playState === PlayState.PLAYING}
-          colors={currentSong?.colors || []}
-        />
-      )}
       {backgroundType === 'shader5' && (
         <ShaderBackground5
           isPlaying={playState === PlayState.PLAYING}
@@ -594,7 +573,7 @@ const App: React.FC = () => {
         <UpdateNotification
           version={updateVersion}
           onClose={() => setUpdateAvailable(false)}
-          onUpdate={() => {}}
+          onUpdate={() => { }}
         />
       )}
 
@@ -637,9 +616,8 @@ const App: React.FC = () => {
       {viewMode === 'lyrics' && (
         <button
           onClick={() => setViewMode('default')}
-          className={`fixed top-6 left-6 z-50 w-10 h-10 flex items-center justify-center text-white/70 hover:text-white transition-all duration-500 group ${
-            showExitButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
+          className={`fixed top-6 left-6 z-50 w-10 h-10 flex items-center justify-center text-white/70 hover:text-white transition-all duration-500 group ${showExitButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
           aria-label="Exit lyrics mode"
         >
           <svg
@@ -738,30 +716,26 @@ const App: React.FC = () => {
         // Desktop Layout - Center when not playing, split when playing
         <div className="flex-1 relative w-full h-full overflow-hidden">
           {/* Controls Section - Centered or left side */}
-          <div 
-            className={`absolute inset-0 flex items-center justify-center ${
-              hasEverPlayed ? '' : 'transition-all duration-1000 ease-in-out'
-            } ${
-              hasEverPlayed
-                ? 'lg:w-1/2 lg:justify-center' 
+          <div
+            className={`absolute inset-0 flex items-center justify-center ${hasEverPlayed ? '' : 'transition-all duration-1000 ease-in-out'
+              } ${hasEverPlayed
+                ? 'lg:w-1/2 lg:justify-center'
                 : 'w-full'
-            }`}
+              }`}
             style={{
               willChange: hasEverPlayed ? 'auto' : 'width',
             }}
           >
             {controlsSection}
           </div>
-          
+
           {/* Lyrics Section - Slides in from right */}
-          <div 
-            className={`absolute inset-y-0 right-0 w-1/2 ${
-              hasEverPlayed ? '' : 'transition-all duration-1000'
-            } ${
-              hasEverPlayed
-                ? 'translate-x-0 opacity-100' 
+          <div
+            className={`absolute inset-y-0 right-0 w-1/2 ${hasEverPlayed ? '' : 'transition-all duration-1000'
+              } ${hasEverPlayed
+                ? 'translate-x-0 opacity-100'
                 : 'translate-x-full opacity-0 pointer-events-none'
-            }`}
+              }`}
             style={{
               willChange: hasEverPlayed ? 'auto' : 'transform, opacity',
               transitionTimingFunction: hasEverPlayed ? 'auto' : 'cubic-bezier(0.4, 0, 0.2, 1)',

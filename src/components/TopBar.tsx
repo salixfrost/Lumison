@@ -23,8 +23,8 @@ interface TopBarProps {
     artist: string;
     coverUrl?: string;
   } | null;
-  backgroundType: 'fluid' | 'shader1' | 'shader2' | 'shader3' | 'shader4' | 'shader5';
-  onBackgroundTypeChange: (type: 'fluid' | 'shader1' | 'shader2' | 'shader3' | 'shader4' | 'shader5') => void;
+  backgroundType: 'fluid' | 'shader1' | 'shader5';
+  onBackgroundTypeChange: (type: 'fluid' | 'shader1' | 'shader5') => void;
   isPlaying: boolean;
 }
 
@@ -86,7 +86,7 @@ const TopBar: React.FC<TopBarProps> = ({
       clearTimeout(hideTimeoutRef.current);
     }
     setIsTopBarActive(true);
-    
+
     // 在全屏模式或歌词模式下设置自动隐藏
     if (isFullscreen || viewMode === 'lyrics') {
       hideTimeoutRef.current = setTimeout(() => {
@@ -194,7 +194,7 @@ const TopBar: React.FC<TopBarProps> = ({
     try {
       const { UpdateService } = await import('../services/updateService');
       const updateInfo = await UpdateService.checkForUpdates();
-      
+
       if (updateInfo.available) {
         // 显示更新通知
         alert(`发现新版本 ${updateInfo.latestVersion}\n\n${updateInfo.body || ''}`);
@@ -214,7 +214,7 @@ const TopBar: React.FC<TopBarProps> = ({
     const handleFullscreenChange = () => {
       const isNowFullscreen = !!document.fullscreenElement;
       setIsFullscreen(isNowFullscreen);
-      
+
       // 进入全屏时，TopBar 默认显示
       // 退出全屏时，TopBar 常驻显示
       if (!isNowFullscreen) {
@@ -285,20 +285,20 @@ const TopBar: React.FC<TopBarProps> = ({
     if (!isPlaying) {
       // Show toast notification
       setShowBackgroundToast(true);
-      
+
       // Clear existing timer
       if (toastTimerRef.current) {
         clearTimeout(toastTimerRef.current);
       }
-      
+
       // Hide after 2 seconds
       toastTimerRef.current = setTimeout(() => {
         setShowBackgroundToast(false);
       }, 2000);
-      
+
       return;
     }
-    
+
     onBackgroundTypeChange(type);
   }, [isPlaying, onBackgroundTypeChange]);
 
@@ -314,7 +314,7 @@ const TopBar: React.FC<TopBarProps> = ({
         setIsSettingsOpen(false);
       }
     };
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isSettingsOpen]);
@@ -331,7 +331,7 @@ const TopBar: React.FC<TopBarProps> = ({
         setIsLabOpen(false);
       }
     };
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isLabOpen]);
@@ -341,7 +341,7 @@ const TopBar: React.FC<TopBarProps> = ({
     // 非全屏且非歌词模式：始终显示
     // 全屏模式或歌词模式：根据 isTopBarActive 状态显示/隐藏
     const shouldShow = (!isFullscreen && viewMode !== 'lyrics') || isTopBarActive;
-    
+
     return {
       base: "transition-all duration-500 ease-out",
       mobileActive: shouldShow
@@ -359,16 +359,15 @@ const TopBar: React.FC<TopBarProps> = ({
     >
       {/* Blur Background Layer */}
       <div
-        className={`absolute inset-0 bg-white/5 backdrop-blur-2xl transition-all duration-500 ${
-          (!isFullscreen && viewMode !== 'lyrics') || isTopBarActive ? "opacity-100" : "opacity-0"
-        }`}
+        className={`absolute inset-0 bg-white/5 backdrop-blur-2xl transition-all duration-500 ${(!isFullscreen && viewMode !== 'lyrics') || isTopBarActive ? "opacity-100" : "opacity-0"
+          }`}
         data-tauri-drag-region
       />
 
       {/* Content */}
       <div className="relative z-10 w-full h-full px-6 flex justify-between items-center pointer-events-auto">
         {/* Left Section: Logo */}
-        <div 
+        <div
           className={`flex items-center gap-3 ${transitionClasses.base} ${transitionClasses.mobileActive} ${transitionClasses.hoverSupport}`}
           data-tauri-drag-region
         >
@@ -379,7 +378,7 @@ const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         {/* Search Bar */}
-        <div 
+        <div
           className={`flex-1 max-w-xl mx-8 ${transitionClasses.base} ${transitionClasses.mobileActive} ${transitionClasses.hoverSupport}`}
           data-tauri-drag-region
         >
@@ -406,9 +405,8 @@ const TopBar: React.FC<TopBarProps> = ({
           <div className="relative" ref={settingsContainerRef} onPointerDown={(e) => e.stopPropagation()}>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${
-                isSettingsOpen ? "text-white bg-white/20 scale-110" : "text-white/80 hover:bg-white/20 hover:text-white"
-              }`}
+              className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${isSettingsOpen ? "text-white bg-white/20 scale-110" : "text-white/80 hover:bg-white/20 hover:text-white"
+                }`}
               title={t("topBar.settings")}
               aria-label={t("topBar.settings")}
             >
@@ -420,7 +418,7 @@ const TopBar: React.FC<TopBarProps> = ({
               <div className="absolute top-full right-0 mt-3 w-72 rounded-2xl bg-black/40 backdrop-blur-2xl saturate-150 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="p-4 space-y-6">
                   <h3 className="text-white font-semibold mb-4 text-sm">{t("topBar.settings")}</h3>
-                  
+
                   {/* Lyrics Font Size */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
@@ -441,15 +439,6 @@ const TopBar: React.FC<TopBarProps> = ({
                     />
                   </div>
 
-                  {/* Theme Button */}
-                  <button
-                    onClick={toggleTheme}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <span className="text-sm">{theme === 'dark' ? t("theme.light") : t("theme.dark")}</span>
-                    <ThemeIcon className="w-4 h-4 transition-transform duration-500 hover:rotate-180" />
-                  </button>
-
                   {/* View Mode Toggle */}
                   {onViewModeChange && (
                     <div className="space-y-2">
@@ -457,21 +446,19 @@ const TopBar: React.FC<TopBarProps> = ({
                       <div className="flex gap-2">
                         <button
                           onClick={() => onViewModeChange('default')}
-                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${
-                            viewMode === 'default'
-                              ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                              : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                          }`}
+                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${viewMode === 'default'
+                            ? 'bg-white/20 text-white border border-white/20 shadow-lg'
+                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
+                            }`}
                         >
                           {t("viewMode.default") || "默认"}
                         </button>
                         <button
                           onClick={() => onViewModeChange('lyrics')}
-                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${
-                            viewMode === 'lyrics'
-                              ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                              : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                          }`}
+                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${viewMode === 'lyrics'
+                            ? 'bg-white/20 text-white border border-white/20 shadow-lg'
+                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
+                            }`}
                         >
                           {t("viewMode.lyrics") || "歌词"}
                         </button>
@@ -518,9 +505,8 @@ const TopBar: React.FC<TopBarProps> = ({
           <div className="relative" ref={labContainerRef} onPointerDown={(e) => e.stopPropagation()}>
             <button
               onClick={() => setIsLabOpen(!isLabOpen)}
-              className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${
-                isLabOpen ? "text-white bg-white/20 scale-110" : "text-white/80 hover:bg-white/20 hover:text-white"
-              }`}
+              className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${isLabOpen ? "text-white bg-white/20 scale-110" : "text-white/80 hover:bg-white/20 hover:text-white"
+                }`}
               title={t("topBar.lab")}
               aria-label={t("topBar.lab")}
             >
@@ -535,7 +521,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     <LabIcon className="w-4 h-4" />
                     {t("topBar.lab")}
                   </h3>
-                  
+
                   {/* Background Selector */}
                   <div className="space-y-2">
                     <label className="text-white/70 text-xs">{t("background.label") || "背景效果"}</label>
@@ -543,13 +529,11 @@ const TopBar: React.FC<TopBarProps> = ({
                       <button
                         onClick={() => handleBackgroundChange('fluid')}
                         disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${
-                          isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
-                        } ${
-                          backgroundType === 'fluid'
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
+                          } ${backgroundType === 'fluid'
                             ? 'bg-white/20 text-white border border-white/20 shadow-lg'
                             : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                        }`}
+                          }`}
                         aria-pressed={backgroundType === 'fluid'}
                       >
                         {t("background.fluid") || "流体"}
@@ -557,69 +541,23 @@ const TopBar: React.FC<TopBarProps> = ({
                       <button
                         onClick={() => handleBackgroundChange('shader1')}
                         disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${
-                          isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
-                        } ${
-                          backgroundType === 'shader1'
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
+                          } ${backgroundType === 'shader1'
                             ? 'bg-white/20 text-white border border-white/20 shadow-lg'
                             : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                        }`}
+                          }`}
                         aria-pressed={backgroundType === 'shader1'}
                       >
                         {t("background.shader1") || "熔化"}
                       </button>
                       <button
-                        onClick={() => handleBackgroundChange('shader2')}
-                        disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${
-                          isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
-                        } ${
-                          backgroundType === 'shader2'
-                            ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                        }`}
-                        aria-pressed={backgroundType === 'shader2'}
-                      >
-                        {t("background.shader2") || "黑洞"}
-                      </button>
-                      <button
-                        onClick={() => handleBackgroundChange('shader3')}
-                        disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${
-                          isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
-                        } ${
-                          backgroundType === 'shader3'
-                            ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                        }`}
-                        aria-pressed={backgroundType === 'shader3'}
-                      >
-                        {t("background.shader3") || "波浪"}
-                      </button>
-                      <button
-                        onClick={() => handleBackgroundChange('shader4')}
-                        disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${
-                          isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
-                        } ${
-                          backgroundType === 'shader4'
-                            ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                        }`}
-                        aria-pressed={backgroundType === 'shader4'}
-                      >
-                        {t("background.shader4") || "光环"}
-                      </button>
-                      <button
                         onClick={() => handleBackgroundChange('shader5')}
                         disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${
-                          isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
-                        } ${
-                          backgroundType === 'shader5'
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
+                          } ${backgroundType === 'shader5'
                             ? 'bg-white/20 text-white border border-white/20 shadow-lg'
                             : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                        }`}
+                          }`}
                         aria-pressed={backgroundType === 'shader5'}
                       >
                         {t("background.shader5") || "漩涡"}
@@ -634,11 +572,10 @@ const TopBar: React.FC<TopBarProps> = ({
                       {/* Gapless Playback */}
                       <button
                         onClick={() => onGaplessToggle(!gaplessEnabled)}
-                        className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] ${
-                          gaplessEnabled
-                            ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
-                        }`}
+                        className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] ${gaplessEnabled
+                          ? 'bg-white/20 text-white border border-white/20 shadow-lg'
+                          : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
+                          }`}
                         aria-pressed={gaplessEnabled}
                       >
                         <div className="flex items-center justify-between">
