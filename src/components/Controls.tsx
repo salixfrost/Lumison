@@ -373,13 +373,7 @@ const Controls: React.FC<ControlsProps> = ({
               <SettingsPopup
                 style={style}
                 speed={speed}
-                preservesPitch={preservesPitch}
-                onTogglePreservesPitch={onTogglePreservesPitch}
                 onSpeedChange={onSpeedChange}
-                audioRef={audioRef}
-                isPlaying={isPlaying}
-                spatialAudioEnabled={spatialAudioEnabled}
-                onToggleSpatialAudio={handleToggleSpatialAudio}
               />
             ) : null
           )
@@ -683,64 +677,26 @@ const VolumePopup: React.FC<VolumePopupProps> = ({
 interface SettingsPopupProps {
   style: any;
   speed: number;
-  preservesPitch: boolean;
-  onTogglePreservesPitch: () => void;
   onSpeedChange: (speed: number) => void;
-  audioRef: React.RefObject<HTMLAudioElement>;
-  isPlaying: boolean;
-  spatialAudioEnabled: boolean;
-  onToggleSpatialAudio: () => void;
 }
 
 const SettingsPopup: React.FC<SettingsPopupProps> = ({
   style,
-  preservesPitch,
-  onTogglePreservesPitch,
   speed,
   onSpeedChange,
-  spatialAudioEnabled,
-  onToggleSpatialAudio,
 }) => {
   const { t } = useI18n();
 
-  const [audioEffect, setAudioEffect] = React.useState<'digital' | 'reverb' | 'spatial'>('digital');
-
   // Quick speed presets
-  const speedPresets = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
+  const speedPresets = [0.5, 0.75, 1, 1.25, 1.5, 2];
   const [showPresets, setShowPresets] = React.useState(false);
-
-  // Calculate slider position based on active effect
-  const getSliderPosition = () => {
-    // Each button is 40px (w-10), gap is 8px (gap-2)
-    // Container padding is 6px (p-1.5)
-    const buttonWidth = 40;
-    const gap = 8;
-    const padding = 6;
-    
-    switch (audioEffect) {
-      case 'digital':
-        return padding; // First button
-      case 'reverb':
-        return padding + buttonWidth + gap; // Second button
-      case 'spatial':
-        return padding + (buttonWidth + gap) * 2; // Third button
-      default:
-        return padding;
-    }
-  };
-
-  // Animated slider background
-  const sliderSpring = useSpring({
-    left: `${getSliderPosition()}px`,
-    config: { tension: 300, friction: 30 },
-  });
 
   return (
     <animated.div
       style={style}
       className="absolute bottom-full left-1/2 -translate-x-1/2 mb-8 z-50 p-3 rounded-[20px] bg-black/10 backdrop-blur-optimized saturate-150 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/5 flex items-center gap-4 cursor-auto hw-accelerate"
     >
-      {/* Speed Control - Left Side */}
+      {/* Speed Control */}
       <div className="relative">
         <button
           onClick={() => setShowPresets(!showPresets)}
@@ -754,7 +710,7 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
         
         {/* Speed Presets Popup */}
         {showPresets && (
-          <div className="absolute top-full mt-2 left-0 p-2 rounded-2xl bg-black/10 backdrop-blur-optimized saturate-150 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/5 flex flex-col gap-1 hw-accelerate">
+          <div className="absolute bottom-full mb-2 left-0 p-2 rounded-2xl bg-black/10 backdrop-blur-optimized saturate-150 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/5 flex flex-col gap-1 hw-accelerate">
             {speedPresets.map((preset) => (
               <button
                 key={preset}
@@ -774,65 +730,6 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
           </div>
         )}
       </div>
-
-      {/* Audio Effects Group - Right Side */}
-      <div className="relative flex items-center gap-2 p-1.5 rounded-full bg-white/10">
-        {/* Animated Slider Background */}
-        <animated.div
-          style={{
-            left: sliderSpring.left,
-          }}
-          className="absolute top-1.5 bottom-1.5 w-10 rounded-full bg-white shadow-lg"
-        />
-
-        {/* Digital/Preserve Pitch */}
-        <button
-          onClick={() => {
-            setAudioEffect('digital');
-            if (!preservesPitch) onTogglePreservesPitch();
-          }}
-          className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
-            audioEffect === 'digital'
-              ? "text-black"
-              : "text-white/40 hover:text-white/70"
-          }`}
-          title={t("speed.digital")}
-        >
-          <WaveformIcon className="w-5 h-5" />
-        </button>
-
-        {/* Reverb Effect */}
-        <button
-          onClick={() => {
-            setAudioEffect('reverb');
-            console.log('Reverb effect activated (not yet implemented)');
-          }}
-          className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
-            audioEffect === 'reverb'
-              ? "text-black"
-              : "text-white/40 hover:text-white/70"
-          }`}
-          title={t("audioEffect.reverb")}
-        >
-          <ReverbIcon className="w-5 h-5" />
-        </button>
-
-        {/* 3D Spatial Audio */}
-        <button
-          onClick={() => {
-            setAudioEffect('spatial');
-            onToggleSpatialAudio();
-          }}
-          className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
-            audioEffect === 'spatial'
-              ? "text-black"
-              : "text-white/40 hover:text-white/70"
-          }`}
-          title={t("spatialAudio.title")}
-        >
-          <SpatialAudioIcon className="w-5 h-5" />
-        </button>
-      </div>
-    </animated.div>
+    </div>
   );
 };
