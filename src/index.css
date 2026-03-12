@@ -26,6 +26,7 @@
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -72,7 +73,7 @@ html {
 
 .theme-transition {
   transition: background-color 1.2s cubic-bezier(0.25, 0.1, 0.25, 1),
-              color 1.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+    color 1.2s cubic-bezier(0.25, 0.1, 0.25, 1);
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }
@@ -110,6 +111,7 @@ html {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -120,20 +122,25 @@ html {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   transition: background 0.2s;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
 [data-theme="light"] ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.2);
 }
+
 [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.3);
 }
@@ -143,15 +150,19 @@ html {
   0% {
     transform: translate3d(0, 0, 0) scale(1);
   }
+
   25% {
     transform: translate3d(15vw, -10vh, 0) scale(1.1);
   }
+
   50% {
     transform: translate3d(-10vw, 15vh, 0) scale(0.9);
   }
+
   75% {
     transform: translate3d(5vw, -5vh, 0) scale(1.05);
   }
+
   100% {
     transform: translate3d(0, 0, 0) scale(1);
   }
@@ -161,6 +172,7 @@ html {
   from {
     transform: rotate3d(0, 0, 1, 0deg);
   }
+
   to {
     transform: rotate3d(0, 0, 1, 360deg);
   }
@@ -180,9 +192,12 @@ html {
 
 /* Floating Animation for Lyrics with Hardware Acceleration */
 @keyframes floatWord {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
+
   50% {
     transform: translate3d(0, -4px, 0);
   }
@@ -200,6 +215,7 @@ html {
     opacity: 0;
     transform: translate3d(0, 10px, 0);
   }
+
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
@@ -231,7 +247,11 @@ html {
 }
 
 /* Prevent drag on interactive elements */
-button, input, select, textarea, a {
+button,
+input,
+select,
+textarea,
+a {
   -webkit-app-region: no-drag;
   app-region: no-drag;
 }
@@ -258,11 +278,76 @@ canvas {
   transform: translateZ(0);
 }
 
+/* TopBar button animation (adapted from provided .btn effect) */
+.topbar-btn {
+  --topbar-btn-fill: #ffffff;
+  --topbar-btn-text-hover: #000000;
+  background: none;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  font-family: "Montserrat", "PingFang SC", sans-serif;
+  text-transform: uppercase;
+  transition: color 0.4s linear, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+  isolation: isolate;
+}
+
+.topbar-btn:hover {
+  color: var(--topbar-btn-text-hover);
+  border-color: transparent;
+}
+
+.topbar-btn::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--topbar-btn-fill);
+  z-index: -1;
+  transition: transform 0.5s;
+  transition-timing-function: cubic-bezier(0.5, 1.6, 0.4, 0.7);
+}
+
+.topbar-btn-fill-x::before {
+  transform: scaleX(0);
+  transform-origin: 0 0;
+}
+
+.topbar-btn-fill-y::before {
+  transform: scaleY(0);
+  transform-origin: 0 0;
+}
+
+.topbar-btn-fill-x:hover::before {
+  transform: scaleX(1);
+}
+
+.topbar-btn-fill-y:hover::before {
+  transform: scaleY(1);
+}
+
+.topbar-btn>* {
+  position: relative;
+  z-index: 1;
+}
+
+.topbar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Optimized Play Button Animation */
 @keyframes playButtonPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.05);
   }
@@ -295,6 +380,7 @@ canvas {
 
 /* Reduce motion for accessibility and low-end devices */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -355,16 +441,17 @@ img {
 
 /* WebView Performance Optimizations */
 @media (hover: none) and (pointer: coarse) {
+
   /* Mobile/Touch devices - reduce effects */
   .hw-accelerate {
     will-change: auto;
   }
-  
+
   /* Simplify shadows on mobile */
   .shadow-lg {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
-  
+
   /* Reduce blur intensity */
   .backdrop-blur-\[100px\] {
     backdrop-filter: blur(20px);
@@ -378,6 +465,7 @@ img {
     opacity: 0;
     transform: translate3d(0, 4px, 0);
   }
+
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0);
@@ -424,9 +512,9 @@ img {
 }
 
 @media (min-width: 1024px) and (min-height: 768px) {
+
   /* Enhanced shadow on capable devices */
   .cover-card-optimized.shadow-lg {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   }
 }
-

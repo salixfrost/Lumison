@@ -18,7 +18,6 @@ import {
   PrevIcon,
   NextIcon,
   SettingsIcon,
-  QueueIcon,
   FastForwardIcon,
   WaveformIcon,
   ReverbIcon,
@@ -39,6 +38,7 @@ interface ControlsProps {
   onSeek: (time: number, playImmediately?: boolean, defer?: boolean) => void;
   title: string;
   artist: string;
+  album?: string;
   audioRef: React.RefObject<HTMLAudioElement>;
   onNext: () => void;
   onPrev: () => void;
@@ -68,6 +68,7 @@ const Controls: React.FC<ControlsProps> = ({
   onSeek,
   title,
   artist,
+  album,
   audioRef,
   onNext,
   onPrev,
@@ -374,6 +375,9 @@ const Controls: React.FC<ControlsProps> = ({
   const bufferedWidthPercent = duration > 0
     ? Math.min(100, Math.max(0, (bufferedEnd / duration) * 100))
     : 0;
+  const progressPercent = duration > 0
+    ? Math.min(100, Math.max(0, (displayTime / duration) * 100))
+    : 0;
 
   return (
     <div className="w-full flex flex-col items-center justify-center gap-1 theme-text-primary select-none relative">
@@ -386,6 +390,7 @@ const Controls: React.FC<ControlsProps> = ({
         setShowSettingsPopup={setShowSettingsPopup}
         title={title}
         artist={artist}
+        album={album}
         settingsPopupContent={
           settingsTransitions((style, item) =>
             item ? (
@@ -425,9 +430,17 @@ const Controls: React.FC<ControlsProps> = ({
           <div
             className="absolute left-0 h-1 rounded-full group-hover:h-1.5 transition-[height] duration-200 ease-out"
             style={{
-              width: `${(displayTime / (duration || 1)) * 100}%`,
+              width: `${progressPercent}%`,
               backgroundColor: theme === 'light' ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)",
               transition: 'background-color 1.2s cubic-bezier(0.25, 0.1, 0.25, 1), height 0.2s ease-out',
+            }}
+          ></div>
+
+          {/* Minimal white thumb */}
+          <div
+            className="absolute top-1/2 z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_2px_rgba(0,0,0,0.12)]"
+            style={{
+              left: `${progressPercent}%`,
             }}
           ></div>
 
@@ -480,20 +493,24 @@ const Controls: React.FC<ControlsProps> = ({
         </span>
       </div>
 
-      {/* Controls Row - Without Volume */}
-      {/* Layout: [Mode] [Prev] [Play] [Next] [Settings] [List] */}
-      <div className="w-full max-w-[360px] mt-4 px-2">
+      {/* Controls Row */}
+      {/* Layout: [Shuffle] [Prev] [Play] [Next] [Loop] */}
+      <div className="w-full max-w-[340px] mt-5 px-1">
         <div className="flex items-center justify-between w-full gap-1">
-          {/* 1. Play Mode */}
+          {/* 1. Shuffle */}
           <button
             onClick={onToggleMode}
-            className="p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-all duration-150 ease-out active:scale-90"
+            className={`p-2 rounded-full transition-all duration-150 ease-out active:scale-90 hover:bg-white/10 active:bg-white/20 ${playMode === PlayMode.SHUFFLE
+              ? theme === 'light' ? 'text-black' : 'text-white'
+              : theme === 'light' ? 'text-black/60 hover:text-black' : 'text-white/60 hover:text-white'
+              }`}
             style={{
               willChange: 'transform, background-color',
             }}
-            title={t("player.repeat")}
+            title="Shuffle"
+            aria-label="Shuffle"
           >
-            {getModeIcon()}
+            <ShuffleIcon className="w-5 h-5" />
           </button>
 
           {/* 2. Previous */}
@@ -562,23 +579,24 @@ const Controls: React.FC<ControlsProps> = ({
             <NextIcon className="w-7 h-7" />
           </button>
 
-          {/* 5. Playlist/Queue */}
+          {/* 5. Loop */}
           <button
-            onClick={onTogglePlaylist}
+            onClick={onToggleMode}
             className={`p-2 rounded-full transition-all duration-150 ease-out active:scale-90 hover:bg-white/10 active:bg-white/20 ${theme === 'light' ? 'text-black/60 hover:text-black' : 'text-white/60 hover:text-white'
               }`}
             style={{
               willChange: 'transform, background-color',
             }}
-            title={t("player.queue")}
+            title="Repeat"
+            aria-label="Repeat"
           >
-            <QueueIcon className="w-5 h-5" />
+            {getModeIcon()}
           </button>
         </div>
       </div>
 
       {/* Volume Control Bar - Below Controls */}
-      <div className="w-full max-w-xl mt-4 px-4">
+      <div className="w-full max-w-xl mt-2 px-4">
         <div className="flex items-center gap-3">
           {/* Volume Icon */}
           <button
@@ -618,10 +636,6 @@ const Controls: React.FC<ControlsProps> = ({
             />
           </div>
 
-          {/* Volume Percentage */}
-          <span className="w-12 text-sm font-medium theme-text-secondary text-right">
-            {Math.round(volume * 100)}%
-          </span>
         </div>
       </div>
     </div>

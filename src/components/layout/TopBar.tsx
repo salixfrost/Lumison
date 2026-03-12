@@ -337,7 +337,7 @@ const TopBar: React.FC<TopBarProps> = ({
         >
           <button
             onClick={handleSearchClick}
-            className="w-full h-9 px-4 rounded-full bg-white/10 backdrop-blur-xl flex items-center gap-3 text-white/60 hover:bg-white/15 hover:text-white/80 transition-all duration-300 ease-out shadow-sm group/search pointer-events-auto hover:scale-[1.02] active:scale-[0.98]"
+            className="topbar-btn topbar-btn-fill-x w-full h-9 px-4 rounded-full bg-white/10 backdrop-blur-xl flex items-center gap-3 text-white/80 transition-all duration-300 ease-out shadow-sm group/search pointer-events-auto hover:scale-[1.02] active:scale-[0.98]"
             aria-label={t("search.placeholder")}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -358,7 +358,7 @@ const TopBar: React.FC<TopBarProps> = ({
           <div className="relative" ref={settingsContainerRef} onPointerDown={(e) => e.stopPropagation()}>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${isSettingsOpen ? "text-white bg-white/20 scale-110" : "text-white/80 hover:bg-white/20 hover:text-white"
+              className={`topbar-btn topbar-btn-fill-y w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${isSettingsOpen ? "text-white bg-white/20 scale-110" : "text-white/80"
                 }`}
               title={t("topBar.settings")}
               aria-label={t("topBar.settings")}
@@ -399,18 +399,18 @@ const TopBar: React.FC<TopBarProps> = ({
                       <div className="flex gap-2">
                         <button
                           onClick={() => onViewModeChange('default')}
-                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${viewMode === 'default'
+                          className={`topbar-btn topbar-btn-fill-x flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${viewMode === 'default'
                             ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
+                            : 'bg-white/5 text-white/80 border border-white/10'
                             }`}
                         >
                           {t("viewMode.default") || "默认"}
                         </button>
                         <button
                           onClick={() => onViewModeChange('lyrics')}
-                          className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${viewMode === 'lyrics'
+                          className={`topbar-btn topbar-btn-fill-y flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${viewMode === 'lyrics'
                             ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
+                            : 'bg-white/5 text-white/80 border border-white/10'
                             }`}
                         >
                           {t("viewMode.lyrics") || "歌词"}
@@ -431,10 +431,10 @@ const TopBar: React.FC<TopBarProps> = ({
                       <button
                         onClick={() => handleBackgroundChange('fluid')}
                         disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
+                        className={`topbar-btn topbar-btn-fill-x px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
                           } ${backgroundType === 'fluid'
                             ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
+                            : 'bg-white/5 text-white/80 border border-white/10'
                           }`}
                         aria-pressed={backgroundType === 'fluid'}
                       >
@@ -443,10 +443,10 @@ const TopBar: React.FC<TopBarProps> = ({
                       <button
                         onClick={() => handleBackgroundChange('shader1')}
                         disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
+                        className={`topbar-btn topbar-btn-fill-y px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
                           } ${backgroundType === 'shader1'
                             ? 'bg-white/20 text-white border border-white/20 shadow-lg'
-                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white'
+                            : 'bg-white/5 text-white/80 border border-white/10'
                           }`}
                         aria-pressed={backgroundType === 'shader1'}
                       >
@@ -461,7 +461,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   <button
                     onClick={handleCheckUpdate}
                     disabled={isCheckingUpdate}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="topbar-btn topbar-btn-fill-x w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="text-sm">{t("topBar.checkUpdate") || "检查更新"}</span>
                     {isCheckingUpdate ? (
@@ -479,7 +479,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   {/* About Button */}
                   <button
                     onClick={handleAboutClick}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98]"
+                    className="topbar-btn topbar-btn-fill-y w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <span className="text-sm">{t("topBar.about")}</span>
                     <InfoIcon className="w-4 h-4 transition-transform duration-300" />
@@ -493,7 +493,7 @@ const TopBar: React.FC<TopBarProps> = ({
           <button
             onClick={toggleFullscreen}
             onPointerDown={(e) => e.stopPropagation()}
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center text-white/80 hover:bg-white/20 hover:text-white transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95"
+            className="topbar-btn topbar-btn-fill-x w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95"
             title={isFullscreen ? t("topBar.exitFullscreen") : t("topBar.enterFullscreen")}
             aria-label={isFullscreen ? t("topBar.exitFullscreen") : t("topBar.enterFullscreen")}
           >
@@ -505,7 +505,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* Minimize Button */}
             <button
               onClick={handleMinimize}
-              className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-all duration-300 ease-out hover:scale-110 active:scale-95"
+              className="topbar-btn topbar-btn-fill-y w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
               title={t('topBar.minimize')}
               aria-label={t('topBar.minimize')}
             >
@@ -515,7 +515,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* Maximize/Restore Button */}
             <button
               onClick={handleMaximize}
-              className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-all duration-300 ease-out hover:scale-110 active:scale-95"
+              className="topbar-btn topbar-btn-fill-x w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
               title={isMaximized ? t('topBar.restore') : t('topBar.maximize')}
               aria-label={isMaximized ? t('topBar.restore') : t('topBar.maximize')}
             >
@@ -529,7 +529,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* Close Button */}
             <button
               onClick={handleClose}
-              className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/60 hover:bg-red-500/80 hover:text-white transition-all duration-300 ease-out hover:scale-110 active:scale-95"
+              className="topbar-btn topbar-btn-fill-y w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
               title={t('topBar.close')}
               aria-label={t('topBar.close')}
             >

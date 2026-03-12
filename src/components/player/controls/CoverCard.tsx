@@ -13,6 +13,7 @@ interface CoverCardProps {
   settingsPopupContent?: React.ReactNode;
   title?: string;
   artist?: string;
+  album?: string;
 }
 
 const CoverCard: React.FC<CoverCardProps> = ({
@@ -23,10 +24,12 @@ const CoverCard: React.FC<CoverCardProps> = ({
   settingsPopupContent,
   title = '',
   artist = '',
+  album,
 }) => {
   const { t } = useI18n();
   const { theme } = useTheme();
   const settingsContainerRef = useRef<HTMLDivElement>(null);
+  const [isFavorite, setIsFavorite] = React.useState(false);
 
   const displayCover = coverUrl;
 
@@ -47,10 +50,10 @@ const CoverCard: React.FC<CoverCardProps> = ({
   }, [showSettingsPopup, setShowSettingsPopup]);
 
   return (
-    <div className="mb-6 w-full max-w-xl">
+    <div className="mb-3 w-full max-w-xl">
       {/* Only show cover when coverUrl exists */}
       {displayCover && (
-        <div className="relative aspect-square w-64 md:w-72 lg:w-80 mx-auto rounded-3xl bg-gradient-to-br from-gray-800 to-gray-900 ring-1 ring-white/10 overflow-hidden shadow-lg">
+        <div className="relative aspect-square w-52 md:w-56 lg:w-60 mx-auto rounded-[4px] bg-black overflow-hidden shadow-lg">
           <SmartImage
             src={displayCover}
             alt="Album Art"
@@ -58,42 +61,58 @@ const CoverCard: React.FC<CoverCardProps> = ({
             imgClassName="w-full h-full object-cover"
             loading="eager"
           />
-
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none"></div>
         </div>
       )}
 
       {/* Song Info and Actions Row - Below Cover */}
-      <div className="w-64 md:w-72 lg:w-80 mx-auto mt-4 flex items-center justify-between gap-3">
+      <div className="w-52 md:w-56 lg:w-60 mx-auto mt-3 flex items-center justify-between gap-3">
         {/* Song Info - Center */}
         <div className="flex-1 min-w-0 text-left">
-          <h3 className="text-base font-semibold tracking-tight truncate theme-text-primary">
+          <h3 className="text-lg font-bold tracking-tight truncate leading-tight theme-text-primary">
             {title || t("player.noMusicLoaded")}
           </h3>
-          <p className="text-sm font-medium truncate theme-text-secondary">
-            {artist || ''}
+          <p className="text-xs truncate leading-tight text-white/55 mt-0.5">
+            {album && artist ? `${album} / ${artist}` : (album || artist || '')}
           </p>
         </div>
 
-        {/* Settings Menu Button */}
-        {setShowSettingsPopup && (
-          <div className="relative flex-shrink-0" ref={settingsContainerRef}>
-            <button
-              onClick={() => setShowSettingsPopup(!showSettingsPopup)}
-              className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${showSettingsPopup
-                ? theme === 'light' ? 'bg-black/10 text-black' : 'bg-white/10 text-white'
-                : theme === 'light' ? 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-                }`}
-              title={t("player.settings")}
-            >
-              <MoreVerticalIcon className="w-5 h-5" />
-            </button>
+        {/* Favorite + More */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setIsFavorite((prev) => !prev)}
+            className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${isFavorite
+              ? 'bg-white/20 text-white'
+              : theme === 'light'
+                ? 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10'
+                : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
+            title="Favorite"
+            aria-label="Favorite"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>
+          </button>
 
-            {/* Settings Popup */}
-            {showSettingsPopup && settingsPopupContent}
-          </div>
-        )}
+          {setShowSettingsPopup && (
+            <div className="relative" ref={settingsContainerRef}>
+              <button
+                onClick={() => setShowSettingsPopup(!showSettingsPopup)}
+                className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${showSettingsPopup
+                  ? theme === 'light' ? 'bg-black/10 text-black' : 'bg-white/10 text-white'
+                  : theme === 'light' ? 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                  }`}
+                title={t("player.settings")}
+                aria-label={t("player.settings")}
+              >
+                <MoreVerticalIcon className="w-5 h-5" />
+              </button>
+
+              {/* Settings Popup */}
+              {showSettingsPopup && settingsPopupContent}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

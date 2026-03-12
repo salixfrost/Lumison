@@ -162,6 +162,7 @@ const App: React.FC = () => {
     () => buildSongLookupIndexMap(playlist.queue),
     [playlist.queue],
   );
+  const hasLoadedSong = Boolean(currentSong) || playlist.queue.length > 0;
 
   const preloadPlaylistPanel = useCallback(() => {
     void importPlaylistPanel();
@@ -546,78 +547,91 @@ const App: React.FC = () => {
   };
 
   // Memoize controls section to prevent unnecessary re-renders
-  const controlsSection = useMemo(() => (
-    <div className={`flex flex-col items-center justify-center w-full h-full z-30 relative ${hasEverPlayed ? 'pt-0' : 'pt-32'}`}>
-      <div className="relative flex flex-col items-center gap-8 w-full max-w-[360px] px-4">
-        <Controls
-          isPlaying={playState === PlayState.PLAYING}
-          onPlayPause={togglePlay}
-          currentTime={currentTime}
-          duration={duration}
-          onSeek={handleSeek}
-          title={currentSong?.title || t("player.welcomeTitle")}
-          artist={currentSong?.artist || t("player.selectSong")}
-          audioRef={audioRef}
-          onNext={playNext}
-          onPrev={playPrev}
-          playMode={playMode}
-          onToggleMode={toggleMode}
-          onTogglePlaylist={handleOpenPlaylist}
-          accentColor={accentColor}
-          volume={volume}
-          onVolumeChange={setVolume}
-          speed={player.speed}
-          preservesPitch={player.preservesPitch}
-          onSpeedChange={handleSpeedChange}
-          onTogglePreservesPitch={player.togglePreservesPitch}
-          coverUrl={currentSong?.coverUrl}
-          isBuffering={isBuffering}
-          showVolumePopup={showVolumePopup}
-          setShowVolumePopup={setShowVolumePopup}
-          showSettingsPopup={showSettingsPopup}
-          setShowSettingsPopup={setShowSettingsPopup}
-        />
+  const controlsSection = useMemo(() => {
+    if (!hasLoadedSong) {
+      return null;
+    }
 
-        {/* Floating Playlist Panel */}
-        {(hasOpenedPlaylist || showPlaylist) && (
-          <Suspense fallback={null}>
-            <LazyPlaylistPanel
-              isOpen={showPlaylist}
-              onClose={() => setShowPlaylist(false)}
-              queue={playlist.queue}
-              currentSongId={currentSong?.id}
-              onPlay={playIndex}
-              onImport={handleImportUrl}
-              onRemove={playlist.removeSongs}
-              accentColor={accentColor}
-              onFilesSelected={handleFileChange}
-              onSearchClick={handleOpenSearch}
-            />
-          </Suspense>
-        )}
+    return (
+      <div className={`flex flex-col items-center justify-center w-full h-full z-30 relative ${hasEverPlayed ? 'pt-0' : 'pt-32'}`}>
+        <div className="relative flex flex-col items-center gap-8 w-full max-w-[360px] px-4">
+          <Controls
+            isPlaying={playState === PlayState.PLAYING}
+            onPlayPause={togglePlay}
+            currentTime={currentTime}
+            duration={duration}
+            onSeek={handleSeek}
+            title={currentSong?.title || t("player.welcomeTitle")}
+            artist={currentSong?.artist || t("player.selectSong")}
+            album={currentSong?.album}
+            audioRef={audioRef}
+            onNext={playNext}
+            onPrev={playPrev}
+            playMode={playMode}
+            onToggleMode={toggleMode}
+            onTogglePlaylist={handleOpenPlaylist}
+            accentColor={accentColor}
+            volume={volume}
+            onVolumeChange={setVolume}
+            speed={player.speed}
+            preservesPitch={player.preservesPitch}
+            onSpeedChange={handleSpeedChange}
+            onTogglePreservesPitch={player.togglePreservesPitch}
+            coverUrl={currentSong?.coverUrl}
+            isBuffering={isBuffering}
+            showVolumePopup={showVolumePopup}
+            setShowVolumePopup={setShowVolumePopup}
+            showSettingsPopup={showSettingsPopup}
+            setShowSettingsPopup={setShowSettingsPopup}
+          />
+
+          {/* Floating Playlist Panel */}
+          {(hasOpenedPlaylist || showPlaylist) && (
+            <Suspense fallback={null}>
+              <LazyPlaylistPanel
+                isOpen={showPlaylist}
+                onClose={() => setShowPlaylist(false)}
+                queue={playlist.queue}
+                currentSongId={currentSong?.id}
+                onPlay={playIndex}
+                onImport={handleImportUrl}
+                onRemove={playlist.removeSongs}
+                accentColor={accentColor}
+                onFilesSelected={handleFileChange}
+                onSearchClick={handleOpenSearch}
+              />
+            </Suspense>
+          )}
+        </div>
       </div>
-    </div>
-  ), [playState, currentTime, duration, currentSong?.title, currentSong?.artist, currentSong?.id, currentSong?.coverUrl, t, playNext, playPrev, playMode, accentColor, volume, player.speed, player.preservesPitch, isBuffering, showVolumePopup, showSettingsPopup, showPlaylist, playlist.queue, playlist.removeSongs, hasEverPlayed, handleOpenPlaylist, handleOpenSearch]);
+    );
+  }, [hasLoadedSong, playState, currentTime, duration, currentSong?.title, currentSong?.artist, currentSong?.id, currentSong?.coverUrl, t, playNext, playPrev, playMode, accentColor, volume, player.speed, player.preservesPitch, isBuffering, showVolumePopup, showSettingsPopup, showPlaylist, playlist.queue, playlist.removeSongs, hasEverPlayed, handleOpenPlaylist, handleOpenSearch]);
 
   const lyricsVersion = currentSong?.lyrics ? currentSong.lyrics.length : 0;
   const lyricsKey = currentSong ? `${currentSong.id}-${lyricsVersion}` : "no-song";
 
   // Memoize lyrics section to prevent unnecessary re-renders
-  const lyricsSection = useMemo(() => (
-    <div className="w-full h-full relative z-20 flex flex-col justify-center px-4 lg:pl-4">
-      <LyricsView
-        key={lyricsKey}
-        lyrics={currentSong?.lyrics || []}
-        audioRef={audioRef}
-        isPlaying={playState === PlayState.PLAYING}
-        currentTime={currentTime}
-        onSeekRequest={handleSeek}
-        matchStatus={matchStatus}
-        fontSize={lyricsFontSize}
-        accentColor={accentColor}
-      />
-    </div>
-  ), [lyricsKey, currentSong?.lyrics, playState, currentTime, matchStatus, lyricsFontSize, accentColor]);
+  const lyricsSection = useMemo(() => {
+    if (!hasLoadedSong) {
+      return null;
+    }
+
+    return (
+      <div className="w-full h-full relative z-20 flex flex-col justify-center px-4 lg:pl-4">
+        <LyricsView
+          key={lyricsKey}
+          lyrics={currentSong?.lyrics || []}
+          audioRef={audioRef}
+          isPlaying={playState === PlayState.PLAYING}
+          currentTime={currentTime}
+          onSeekRequest={handleSeek}
+          matchStatus={matchStatus}
+          fontSize={lyricsFontSize}
+          accentColor={accentColor}
+        />
+      </div>
+    );
+  }, [hasLoadedSong, lyricsKey, currentSong?.lyrics, playState, currentTime, matchStatus, lyricsFontSize, accentColor]);
 
   const fallbackWidth = typeof window !== "undefined" ? window.innerWidth : 0;
   const effectivePaneWidth = paneWidth || fallbackWidth;
@@ -808,21 +822,23 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-            <button
-              type="button"
-              onClick={toggleIndicator}
-              className="relative flex h-4 w-28 items-center justify-center rounded-full bg-white/10 backdrop-blur-2xl border border-white/15 transition-transform duration-200 active:scale-105"
-              style={{
-                transform: `translateX(${isDragging ? dragOffsetX * 0.04 : 0}px)`,
-              }}
-            >
-              <span
-                className={`absolute inset-0 rounded-full bg-white/25 backdrop-blur-[30px] transition-opacity duration-200 ${activePanel === "controls" ? "opacity-90" : "opacity-60"
-                  }`}
-              />
-            </button>
-          </div>
+          {hasLoadedSong && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+              <button
+                type="button"
+                onClick={toggleIndicator}
+                className="relative flex h-4 w-28 items-center justify-center rounded-full bg-white/10 backdrop-blur-2xl border border-white/15 transition-transform duration-200 active:scale-105"
+                style={{
+                  transform: `translateX(${isDragging ? dragOffsetX * 0.04 : 0}px)`,
+                }}
+              >
+                <span
+                  className={`absolute inset-0 rounded-full bg-white/25 backdrop-blur-[30px] transition-opacity duration-200 ${activePanel === "controls" ? "opacity-90" : "opacity-60"
+                    }`}
+                />
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         // Desktop Layout - Center when not playing, split when playing
