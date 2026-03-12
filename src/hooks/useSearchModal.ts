@@ -16,7 +16,7 @@ import {
   getSearchResultKey,
 } from "../utils/searchResultLookup";
 
-export type SearchSource = "queue" | "netease" | "archive";
+export type SearchSource = "queue" | "online";
 export type SearchResultItem = Song | NeteaseTrackInfo | StreamingTrack;
 
 interface ContextMenuState {
@@ -24,7 +24,7 @@ interface ContextMenuState {
   x: number;
   y: number;
   track: SearchResultItem;
-  type: SearchSource;
+  type: SearchSource | "netease" | "archive";
 }
 
 interface UseSearchModalParams {
@@ -43,6 +43,7 @@ export const useSearchModal = ({
   // Search query state
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<SearchSource>("queue");
+  const [onlineSource, setOnlineSource] = useState<"netease" | "archive">("netease");
 
   // Navigation State
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -105,28 +106,28 @@ export const useSearchModal = ({
 
   // Auto-search for Netease when query changes (with debounce)
   useEffect(() => {
-    if (activeTab === "netease" && query.trim().length > 0) {
+    if (activeTab === "online" && onlineSource === "netease" && query.trim().length > 0) {
       const timer = setTimeout(() => {
         performNeteaseSearch();
       }, 500); // 500ms debounce
       return () => clearTimeout(timer);
     }
-  }, [query, activeTab]);
+  }, [query, activeTab, onlineSource]);
 
   // Auto-search for Archive when query changes (with debounce)
   useEffect(() => {
-    if (activeTab === "archive" && query.trim().length > 0) {
+    if (activeTab === "online" && onlineSource === "archive" && query.trim().length > 0) {
       const timer = setTimeout(() => {
         performArchiveSearch();
       }, 500); // 500ms debounce
       return () => clearTimeout(timer);
     }
-  }, [query, activeTab]);
+  }, [query, activeTab, onlineSource]);
 
   // Reset selected index when switching tabs or query changes
   useEffect(() => {
     setSelectedIndex(-1);
-  }, [activeTab, query]);
+  }, [activeTab, onlineSource, query]);
 
   // Reset context menu when modal closes
   useEffect(() => {
@@ -160,14 +161,14 @@ export const useSearchModal = ({
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
-      if (activeTab === "netease") {
+      if (activeTab === "online" && onlineSource === "netease") {
         const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
         if (scrollHeight - scrollTop - clientHeight < 100) {
           loadMoreNetease();
         }
       }
     },
-    [activeTab, loadMoreNetease],
+    [activeTab, onlineSource, loadMoreNetease],
   );
 
   // --- Navigation ---
@@ -183,9 +184,9 @@ export const useSearchModal = ({
     let listLength = 0;
     if (activeTab === "queue") {
       listLength = queueResults.length;
-    } else if (activeTab === "netease") {
+    } else if (onlineSource === "netease") {
       listLength = neteaseResults.length;
-    } else if (activeTab === "archive") {
+    } else if (onlineSource === "archive") {
       listLength = archiveResults.length;
     }
 
@@ -196,6 +197,7 @@ export const useSearchModal = ({
     scrollToItem(next);
   }, [
     activeTab,
+    onlineSource,
     selectedIndex,
     queueResults.length,
     neteaseResults.length,
@@ -210,18 +212,14 @@ export const useSearchModal = ({
   }, [selectedIndex, scrollToItem]);
 
   const switchTab = useCallback(() => {
-    setActiveTab((prev) => {
-      if (prev === "queue") return "netease";
-      if (prev === "netease") return "archive";
-      return "queue";
-    });
+    setActiveTab((prev) => (prev === "queue" ? "online" : "queue"));
     setSelectedIndex(-1);
   }, []);
 
   // --- Context Menu ---
 
   const openContextMenu = useCallback(
-    (e: React.MouseEvent, item: SearchResultItem, type: SearchSource) => {
+    (e: React.MouseEvent, item: SearchResultItem, type: SearchSource | "netease" | "archive") => {
       e.preventDefault();
       let x = e.clientX;
       let y = e.clientY;
@@ -281,28 +279,33 @@ export const useSearchModal = ({
     neteaseResults.length === 0;
 
   const showNeteaseInitial =
-    activeTab === "netease" &&
+    activeTab === "online" &&
+    onlineSource === "netease" &&
     !neteaseProvider.hasSearched &&
     query.trim().length === 0;
 
   const showArchivePrompt =
-    activeTab === "archive" &&
+    activeTab === "online" &&
+    onlineSource === "archive" &&
     !archiveHasSearched &&
     query.trim().length > 0;
 
   const showArchiveEmpty =
-    activeTab === "archive" &&
+    activeTab === "online" &&
+    onlineSource === "archive" &&
     archiveHasSearched &&
     archiveResults.length === 0 &&
     !archiveProvider.isLoading;
 
   const showArchiveLoading =
-    activeTab === "archive" &&
+    activeTab === "online" &&
+    onlineSource === "archive" &&
     archiveProvider.isLoading &&
     archiveResults.length === 0;
 
   const showArchiveInitial =
-    activeTab === "archive" &&
+    activeTab === "online" &&
+    onlineSource === "archive" &&
     !archiveHasSearched &&
     query.trim().length === 0;
 
@@ -312,6 +315,8 @@ export const useSearchModal = ({
     setQuery,
     activeTab,
     setActiveTab,
+    onlineSource,
+    setOnlineSource,
     selectedIndex,
     contextMenu,
 

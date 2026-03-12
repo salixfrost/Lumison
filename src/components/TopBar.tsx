@@ -311,6 +311,10 @@ const TopBar: React.FC<TopBarProps> = ({
     };
   }, [isTopBarActive, isFullscreen, viewMode]);
 
+  useEffect(() => {
+    setIsTopBarActive(false);
+  }, []);
+
   return (
     <div
       className="fixed top-0 left-0 w-full h-14 z-[60] group"
@@ -326,17 +330,6 @@ const TopBar: React.FC<TopBarProps> = ({
 
       {/* Content */}
       <div className="relative z-10 w-full h-full px-6 flex justify-between items-center pointer-events-auto">
-        {/* Left Section: Logo */}
-        <div
-          className={`flex items-center gap-3 ${transitionClasses.base} ${transitionClasses.mobileActive} ${transitionClasses.hoverSupport}`}
-          data-tauri-drag-region
-        >
-          {/* Logo */}
-          <h1 className="text-white/90 font-bold tracking-wider text-sm uppercase drop-shadow-md select-none">
-            Lumison
-          </h1>
-        </div>
-
         {/* Search Bar */}
         <div
           className={`flex-1 max-w-xl mx-8 ${transitionClasses.base} ${transitionClasses.mobileActive} ${transitionClasses.hoverSupport}`}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UpdateService } from '../services/updateService';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -14,15 +14,34 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({
   onUpdate,
 }) => {
   const { t } = useI18n();
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    // Example: Replace this with your actual logic to detect if a song is playing
+    const checkIfPlaying = () => {
+      // Simulate a function that checks if a song is playing
+      const playing = false; // Replace with actual logic
+      setIsPlaying(playing);
+    };
+
+    checkIfPlaying();
+
+    // Optionally, set up an interval or event listener to update the state
+    // Example: setInterval(checkIfPlaying, 1000);
+
+    return () => {
+      // Cleanup if using intervals or event listeners
+    };
+  }, []);
 
   const handleUpdate = async () => {
     setIsUpdating(true);
     const success = await UpdateService.downloadAndInstall((p) => {
       setProgress(Math.round(p));
     });
-    
+
     if (!success) {
       setIsUpdating(false);
       // Update failed, show error
@@ -34,12 +53,12 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({
       <div className="relative group">
         {/* Glow effect */}
         <div className="absolute -inset-1 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-blue-600/20 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-500" />
-        
+
         {/* Main card */}
         <div className="relative bg-black/60 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
           {/* Animated gradient border */}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 opacity-50" />
-          
+
           <div className="relative p-6 w-96">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
@@ -53,7 +72,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                     </svg>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-white font-semibold text-base mb-0.5">
                     {t('update.available') || 'New Update Available'}
@@ -85,16 +104,16 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({
                   <span className="font-mono">{progress}%</span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden backdrop-blur-xl border border-white/10">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 transition-all duration-300 relative overflow-hidden"
                     style={{ width: `${progress}%` }}
                   >
                     {/* Shimmer effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" 
-                         style={{ 
-                           backgroundSize: '200% 100%',
-                           animation: 'shimmer 2s infinite'
-                         }} 
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"
+                      style={{
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 2s infinite'
+                      }}
                     />
                   </div>
                 </div>

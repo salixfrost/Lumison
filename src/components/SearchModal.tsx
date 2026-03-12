@@ -216,17 +216,19 @@ const SearchModal: React.FC<SearchModalProps> = ({
         onPlayQueueIndex(item.i);
         onClose();
       }
-    } else if (search.activeTab === "netease") {
-      const track = search.neteaseResults[index];
-      if (track) {
-        playNeteaseTrack(track);
-        onClose();
-      }
-    } else if (search.activeTab === "archive") {
-      const track = search.archiveResults[index];
-      if (track) {
-        playArchiveTrack(track);
-        onClose();
+    } else if (search.activeTab === "online") {
+      if (search.onlineSource === "netease") {
+        const track = search.neteaseResults[index];
+        if (track) {
+          playNeteaseTrack(track);
+          onClose();
+        }
+      } else {
+        const track = search.archiveResults[index];
+        if (track) {
+          playArchiveTrack(track);
+          onClose();
+        }
       }
     }
   };
@@ -322,10 +324,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
       return null;
     }
 
-    return search.activeTab === "netease"
+    return search.onlineSource === "netease"
       ? search.neteaseResultMap.get(menuTrackId) ?? null
       : search.archiveResultMap.get(menuTrackId) ?? null;
-  }, [menuTrackId, search.activeTab, search.neteaseResultMap, search.archiveResultMap]);
+  }, [menuTrackId, search.onlineSource, search.neteaseResultMap, search.archiveResultMap]);
 
   // Reset refs
 
@@ -371,13 +373,13 @@ const SearchModal: React.FC<SearchModalProps> = ({
         {/* Header Area */}
         <div className="flex flex-col px-5 pt-5 pb-3 gap-4 border-b border-white/10 shrink-0 bg-white/5 z-10">
           {/* Animated Tabs */}
-          <div className="relative flex items-center justify-center p-1 rounded-lg self-center w-full max-w-md mb-1 bg-black/20 backdrop-blur-md shadow-inner">
+          <div className="relative flex items-center justify-center p-1 rounded-lg self-center w-full max-w-sm mb-1 bg-black/20 backdrop-blur-md shadow-inner">
             {/* Gliding Pill */}
             <div
               className="absolute top-1 bottom-1 rounded-[6px] bg-white/15 shadow-[0_1px_2px_rgba(0,0,0,0.1)] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
               style={{
-                left: search.activeTab === "queue" ? "4px" : search.activeTab === "netease" ? "calc(33.33% + 2px)" : "calc(66.66% + 2px)",
-                width: "calc(33.33% - 4px)",
+                left: search.activeTab === "queue" ? "4px" : "calc(50% + 2px)",
+                width: "calc(50% - 6px)",
               }}
             />
 
@@ -394,56 +396,73 @@ const SearchModal: React.FC<SearchModalProps> = ({
             </button>
             <button
               onClick={() => {
-                search.setActiveTab("netease");
+                search.setActiveTab("online");
               }}
               className={`
                         relative flex-1 py-1.5 text-[13px] font-medium transition-colors duration-200 z-10
-                        ${search.activeTab === "netease" ? "text-white" : "text-white/50 hover:text-white/70"}
+                        ${search.activeTab === "online" ? "text-white" : "text-white/50 hover:text-white/70"}
                     `}
             >
-              {t("search.netease")}
-            </button>
-            <button
-              onClick={() => {
-                search.setActiveTab("archive");
-              }}
-              className={`
-                        relative flex-1 py-1.5 text-[13px] font-medium transition-colors duration-200 z-10
-                        ${search.activeTab === "archive" ? "text-white" : "text-white/50 hover:text-white/70"}
-                    `}
-            >
-              {t("search.archive")}
+              {t("search.online") || "在线搜索"}
             </button>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative group mx-2">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <SearchIcon className="w-5 h-5 text-white/40" />
+          {/* Search Bar with Provider Toggle */}
+          <div className="relative group mx-2 flex flex-col gap-3">
+            <div className="relative w-full">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <SearchIcon className="w-5 h-5 text-white/40" />
+              </div>
+              <input
+                id="search-input"
+                name="search"
+                ref={inputRef}
+                type="text"
+                value={search.query}
+                onChange={(e) => search.setQuery(e.target.value)}
+                placeholder={
+                  search.activeTab === "queue"
+                    ? t("search.filterQueue")
+                    : search.onlineSource === "netease"
+                      ? t("search.searchCloudMusic") || "搜索网易云音乐"
+                      : t("search.searchInternetArchive") || "搜索 Internet Archive"
+                }
+                className="
+                          w-full pl-12 pr-4 py-3.5
+                          bg-black/20 hover:bg-black/30 focus:bg-black/40
+                          border border-white/5 focus:border-white/15
+                          rounded-[12px]
+                          text-lg font-medium text-white placeholder:text-white/20
+                          outline-none
+                          transition-all duration-200
+                          shadow-inner
+                      "
+              />
             </div>
-            <input
-              id="search-input"
-              name="search"
-              ref={inputRef}
-              type="text"
-              value={search.query}
-              onChange={(e) => search.setQuery(e.target.value)}
-              placeholder={
-                search.activeTab === "queue"
-                  ? t("search.filterQueue")
-                  : t("search.searchOnline")
-              }
-              className="
-                        w-full pl-12 pr-4 py-3.5
-                        bg-black/20 hover:bg-black/30 focus:bg-black/40
-                        border border-white/5 focus:border-white/15
-                        rounded-[12px]
-                        text-lg font-medium text-white placeholder:text-white/20
-                        outline-none
-                        transition-all duration-200
-                        shadow-inner
-                    "
-            />
+
+            {/* Provider Toggle (Only shown for Online tab) */}
+            <div className={`flex items-center justify-center transition-all duration-300 overflow-hidden ${search.activeTab === "online" ? "h-9 opacity-100 mb-1" : "h-0 opacity-0"}`}>
+              <div className="inline-flex p-1 rounded-full bg-black/20 backdrop-blur-md border border-white/5 shadow-inner">
+                <button
+                  onClick={() => search.setOnlineSource("netease")}
+                  className={`px-4 py-1 rounded-full text-xs font-medium transition-all duration-200 ${search.onlineSource === "netease"
+                    ? "bg-white/15 text-white shadow-sm"
+                    : "text-white/40 hover:text-white/60"
+                    }`}
+                >
+                  {t("search.netease") || "网易云音乐"}
+                </button>
+                <button
+                  onClick={() => search.setOnlineSource("archive")}
+                  className={`px-4 py-1 rounded-full text-xs font-medium transition-all duration-200 ${search.onlineSource === "archive"
+                    ? "bg-white/15 text-white shadow-sm"
+                    : "text-white/40 hover:text-white/60"
+                    }`}
+                >
+                  {t("search.archive") || "Internet Archive"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -556,433 +575,513 @@ const SearchModal: React.FC<SearchModalProps> = ({
             </div>
           )}
 
-          {/* Netease Results */}
-          {search.activeTab === "netease" && (
+          {/* Online Results (Netease and Internet Archive) */}
+          {search.activeTab === "online" && (
             <div className="relative flex flex-col gap-1 pb-4">
-              {/* No results after search */}
-              {search.showNeteaseEmpty && (
-                <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                  <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
-                  <span className="text-base font-medium">
-                    {t("search.noMatchesFound")}
-                  </span>
-                </div>
-              )}
-
-              {/* Loading State */}
-              {search.showNeteaseLoading && (
-                <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                  <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
-                  <span className="text-base font-medium">{t("search.searching")}</span>
-                </div>
-              )}
-
-              {/* Initial empty state */}
-              {search.showNeteaseInitial && (
-                <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                  <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
-                  <span className="text-base font-medium">
-                    {t("search.searchCloudMusic")}
-                  </span>
-                </div>
-              )}
-
-              {/* Results list */}
-              {search.neteaseResults.length > 0 && (
+              {/* Netease Provider UI */}
+              {search.onlineSource === "netease" && (
                 <>
-                  {/* Floating Selection Background */}
-                  {search.selectedIndex >= 0 && search.itemRefs.current[search.selectedIndex] && (
-                    <div
-                      className="absolute left-0 right-0 bg-white/25 backdrop-blur-md rounded-[10px] pointer-events-none transition-all duration-200 ease-out"
-                      style={{
-                        top: `${search.itemRefs.current[search.selectedIndex]?.offsetTop || 0}px`,
-                        height: `${search.itemRefs.current[search.selectedIndex]?.offsetHeight || 56}px`,
-                        zIndex: 0,
-                      }}
-                    />
-                  )}
-
-                  {search.neteaseResults.map((track, idx) => {
-                    const nowPlaying = search.isNowPlaying(track);
-                    const trackKey = search.getResultKey(track);
-                    return (
-                      <div
-                        key={trackKey}
-                        ref={(el) => {
-                          search.itemRefs.current[idx] = el;
-                        }}
-                        onClick={() => handleSelection(idx)}
-                        onContextMenu={(e) =>
-                          search.openContextMenu(e, track, "netease")
-                        }
-                        className={`
-                                        relative z-10 group flex items-center gap-3 p-3 rounded-[10px] cursor-pointer
-                                        ${search.selectedIndex === idx ? "text-white" : "hover:bg-white/5 hover:transition-colors hover:duration-150 text-white/90"}
-                                    `}
-                      >
-                        <div className="relative w-10 h-10 rounded-[6px] bg-white/5 overflow-hidden shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-200">
-                          {track.coverUrl && (
-                            <SmartImage
-                              src={track.coverUrl}
-                              alt={track.title}
-                              containerClassName="w-full h-full"
-                              imgClassName={`w-full h-full object-cover transition-opacity ${nowPlaying ? "opacity-40 blur-[1px]" : ""}`}
-                            />
-                          )}
-
-                          {/* Play Button on Hover or Selected */}
-                          {!nowPlaying && (
-                            <div className={`absolute inset-0 flex items-center justify-center bg-black/50 ${search.selectedIndex === idx ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-hover:transition-opacity group-hover:duration-150"}`}>
-                              <PlayIcon className="w-4 h-4 fill-white drop-shadow-md" />
-                            </div>
-                          )}
-
-                          {/* Now Playing Indicator */}
-                          {nowPlaying && isPlaying && (
-                            <div className="absolute inset-0 flex items-center justify-center gap-[2px]">
-                              <div
-                                className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite]"
-                                style={{ height: "8px", color: accentColor }}
-                              ></div>
-                              <div
-                                className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.2s]"
-                                style={{ height: "14px", color: accentColor }}
-                              ></div>
-                              <div
-                                className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.4s]"
-                                style={{ height: "10px", color: accentColor }}
-                              ></div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                          <div
-                            className={`text-[15px] font-medium truncate ${search.selectedIndex === idx ? "text-white" : nowPlaying ? "" : "text-white/90"}`}
-                            style={nowPlaying ? { color: accentColor } : {}}
-                          >
-                            {track.title}
-                          </div>
-                          <div
-                            className={`text-[13px] truncate ${search.selectedIndex === idx ? "text-white/70" : "text-white/40"}`}
-                          >
-                            {track.artist}{" "}
-                            <span className="opacity-50 mx-1">·</span>{" "}
-                            {track.album}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={(e) => handleMenuClick(e, trackKey)}
-                            className={`track-menu w-7 h-7 rounded-lg flex items-center justify-center transition-all ${menuTrackId === trackKey
-                              ? "bg-white/20 text-white"
-                              : "text-white/40 hover:bg-white/10 hover:text-white/70"
-                              }`}
-                            title={t("search.moreOptions")}
-                          >
-                            <MoreVerticalIcon className="w-4 h-4" />
-                          </button>
-                          <span
-                            className={`
-                                            text-[10px] font-bold px-1.5 py-0.5 rounded border
-                                            ${search.selectedIndex === idx
-                                ? "border-white/30 text-white/80 bg-white/20"
-                                : "border-white/10 text-white/30 bg-white/5"
-                              }
-                                        `}
-                          >
-                            Cloud
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Loading Indicator */}
-                  {search.neteaseProvider.hasMore && (
-                    <div className="py-6 flex items-center justify-center">
-                      {search.neteaseProvider.isLoading ? (
-                        <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
-                      ) : (
-                        <div className="text-white/20 text-xs">
-                          {t("search.scrollForMore")}
-                        </div>
-                      )}
+                  {/* No results after search */}
+                  {search.showNeteaseEmpty && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <span className="text-base font-medium">
+                        {t("search.noMatchesFound")}
+                      </span>
                     </div>
                   )}
+
+                  {/* Loading State */}
+                  {search.showNeteaseLoading && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
+                      <span className="text-base font-medium">{t("search.searching")}</span>
+                    </div>
+                  )}
+
+                  {/* Initial empty state */}
+                  {search.showNeteaseInitial && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <span className="text-base font-medium">
+                        {t("search.searchCloudMusic")}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Results list */}
+                  {search.neteaseResults.length > 0 && (
+                    <>
+                      {/* Floating Selection Background */}
+                      {search.selectedIndex >= 0 && search.itemRefs.current[search.selectedIndex] && (
+                        <div
+                          className="absolute left-0 right-0 bg-white/25 backdrop-blur-md rounded-[10px] pointer-events-none transition-all duration-200 ease-out"
+                          style={{
+                            top: `${search.itemRefs.current[search.selectedIndex]?.offsetTop || 0}px`,
+                            height: `${search.itemRefs.current[search.selectedIndex]?.offsetHeight || 56}px`,
+                            zIndex: 0,
+                          }}
+                        />
+                      )}
+
+                      {search.neteaseResults.map((track, idx) => {
+                        const nowPlaying = search.isNowPlaying(track);
+                        const trackKey = search.getResultKey(track);
+                        return (
+                          <div
+                            key={trackKey}
+                            ref={(el) => {
+                              search.itemRefs.current[idx] = el;
+                            }}
+                            onClick={() => handleSelection(idx)}
+                            onContextMenu={(e) =>
+                              search.openContextMenu(e, track, "netease")
+                            }
+                            className={`
+                                            relative z-10 group flex items-center gap-3 p-3 rounded-[10px] cursor-pointer
+                                            ${search.selectedIndex === idx ? "text-white" : "hover:bg-white/5 hover:transition-colors hover:duration-150 text-white/90"}
+                                        `}
+                          >
+                            <div className="relative w-10 h-10 rounded-[6px] bg-white/5 overflow-hidden shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-200">
+                              {track.coverUrl && (
+                                <SmartImage
+                                  src={track.coverUrl}
+                                  alt={track.title}
+                                  containerClassName="w-full h-full"
+                                  imgClassName={`w-full h-full object-cover transition-opacity ${nowPlaying ? "opacity-40 blur-[1px]" : ""}`}
+                                />
+                              )}
+
+                              {/* Play Button on Hover or Selected */}
+                              {!nowPlaying && (
+                                <div className={`absolute inset-0 flex items-center justify-center bg-black/50 ${search.selectedIndex === idx ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-hover:transition-opacity group-hover:duration-150"}`}>
+                                  <PlayIcon className="w-4 h-4 fill-white drop-shadow-md" />
+                                </div>
+                              )}
+
+                              {/* Now Playing Indicator */}
+                              {nowPlaying && isPlaying && (
+                                <div className="absolute inset-0 flex items-center justify-center gap-[2px]">
+                                  <div
+                                    className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite]"
+                                    style={{ height: "8px", color: accentColor }}
+                                  ></div>
+                                  <div
+                                    className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.2s]"
+                                    style={{ height: "14px", color: accentColor }}
+                                  ></div>
+                                  <div
+                                    className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.4s]"
+                                    style={{ height: "10px", color: accentColor }}
+                                  ></div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                              <div
+                                className={`text-[15px] font-medium truncate ${search.selectedIndex === idx ? "text-white" : nowPlaying ? "" : "text-white/90"}`}
+                                style={nowPlaying ? { color: accentColor } : {}}
+                              >
+                                {track.title}
+                              </div>
+                              <div
+                                className={`text-[13px] truncate ${search.selectedIndex === idx ? "text-white/70" : "text-white/40"}`}
+                              >
+                                {track.artist}{" "}
+                                <span className="opacity-50 mx-1">·</span>{" "}
+                                {track.album}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={(e) => handleMenuClick(e, trackKey)}
+                                className={`track-menu w-7 h-7 rounded-lg flex items-center justify-center transition-all ${menuTrackId === trackKey
+                                  ? "bg-white/20 text-white"
+                                  : "text-white/40 hover:bg-white/10 hover:text-white/70"
+                                  }`}
+                                title={t("search.moreOptions")}
+                              >
+                                <MoreVerticalIcon className="w-4 h-4" />
+                              </button>
+                              <span
+                                className={`
+                                                text-[10px] font-bold px-1.5 py-0.5 rounded border
+                                                ${search.selectedIndex === idx
+                                    ? "border-white/30 text-white/80 bg-white/20"
+                                    : "border-white/10 text-white/30 bg-white/5"
+                                  }
+                                            `}
+                              >
+                                Cloud
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Loading Indicator */}
+                      {search.neteaseProvider.hasMore && (
+                        <div className="py-6 flex items-center justify-center">
+                          {search.neteaseProvider.isLoading ? (
+                            <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+                          ) : (
+                            <div className="text-white/20 text-xs">
+                              {t("search.scrollForMore")}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </>
               )}
-            </div>
-          )}
 
-          {/* Internet Archive Results */}
-          {search.activeTab === "archive" && (
-            <div className="relative flex flex-col gap-1 pb-4">
-              {search.showArchiveEmpty && (
-                <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                  <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
-                  <span className="text-base font-medium">{t("search.noMatchesFound")}</span>
-                </div>
-              )}
-              {search.showArchiveLoading && (
-                <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                  <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
-                  <span className="text-base font-medium">{t("search.searching")}</span>
-                </div>
-              )}
-              {search.showArchiveInitial && (
-                <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                  <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
-                  <span className="text-base font-medium">{t("search.searchInternetArchive")}</span>
-                </div>
-              )}
-              {search.archiveResults.length > 0 && (
+              {/* Archive Provider UI */}
+              {search.onlineSource === "archive" && (
                 <>
-                  {search.selectedIndex >= 0 && search.itemRefs.current[search.selectedIndex] && (
-                    <div
-                      className="absolute left-0 right-0 bg-white/25 backdrop-blur-md rounded-[10px] pointer-events-none transition-all duration-200 ease-out"
-                      style={{
-                        top: `${search.itemRefs.current[search.selectedIndex]?.offsetTop || 0}px`,
-                        height: `${search.itemRefs.current[search.selectedIndex]?.offsetHeight || 56}px`,
-                        zIndex: 0,
-                      }}
-                    />
+                  {search.showArchiveEmpty && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <span className="text-base font-medium">{t("search.noMatchesFound")}</span>
+                    </div>
                   )}
-                  {search.archiveResults.map((track, idx) => {
-                    const nowPlaying = search.isNowPlaying(track);
-                    const trackKey = search.getResultKey(track);
-                    return (
-                      <div
-                        key={trackKey}
-                        ref={(el) => {
-                          search.itemRefs.current[idx] = el;
-                        }}
-                        onClick={() => handleSelection(idx)}
-                        onContextMenu={(e) => search.openContextMenu(e, track, "archive")}
-                        className={`
-                          relative z-10 group flex items-center gap-3 p-3 rounded-[10px] cursor-pointer
-                          ${search.selectedIndex === idx ? "text-white" : "hover:bg-white/5 hover:transition-colors hover:duration-150 text-white/90"}
-                        `}
-                      >
-                        <div className="relative w-10 h-10 rounded-[6px] bg-white/5 overflow-hidden shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-200">
-                          {track.coverUrl && (
-                            <SmartImage
-                              src={track.coverUrl}
-                              alt={track.title}
-                              containerClassName="w-full h-full"
-                              imgClassName={`w-full h-full object-cover transition-opacity ${nowPlaying ? "opacity-40 blur-[1px]" : ""}`}
-                            />
-                          )}
-                          {!nowPlaying && (
-                            <div className={`absolute inset-0 flex items-center justify-center bg-black/50 ${search.selectedIndex === idx ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-hover:transition-opacity group-hover:duration-150"}`}>
-                              <PlayIcon className="w-4 h-4 fill-white drop-shadow-md" />
-                            </div>
-                          )}
-                          {nowPlaying && isPlaying && (
-                            <div className="absolute inset-0 flex items-center justify-center gap-[2px]">
-                              <div
-                                className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite]"
-                                style={{ height: "8px", color: accentColor }}
-                              ></div>
-                              <div
-                                className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.2s]"
-                                style={{ height: "14px", color: accentColor }}
-                              ></div>
-                              <div
-                                className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.4s]"
-                                style={{ height: "10px", color: accentColor }}
-                              ></div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                  {search.showArchiveLoading && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
+                      <span className="text-base font-medium">{t("search.searching")}</span>
+                    </div>
+                  )}
+                  {search.showArchiveInitial && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <span className="text-base font-medium">{t("search.searchInternetArchive")}</span>
+                    </div>
+                  )}
+                  {search.archiveResults.length > 0 && (
+                    <>
+                      {search.selectedIndex >= 0 && search.itemRefs.current[search.selectedIndex] && (
+                        <div
+                          className="absolute left-0 right-0 bg-white/25 backdrop-blur-md rounded-[10px] pointer-events-none transition-all duration-200 ease-out"
+                          style={{
+                            top: `${search.itemRefs.current[search.selectedIndex]?.offsetTop || 0}px`,
+                            height: `${search.itemRefs.current[search.selectedIndex]?.offsetHeight || 56}px`,
+                            zIndex: 0,
+                          }}
+                        />
+                      )}
+                      {search.archiveResults.map((track, idx) => {
+                        const nowPlaying = search.isNowPlaying(track);
+                        const trackKey = search.getResultKey(track);
+                        return (
                           <div
-                            className={`text-[15px] font-medium truncate ${search.selectedIndex === idx ? "text-white" : nowPlaying ? "" : "text-white/90"}`}
-                            style={nowPlaying ? { color: accentColor } : {}}
-                          >
-                            {track.title}
-                          </div>
-                          <div
-                            className={`text-[13px] truncate ${search.selectedIndex === idx ? "text-white/70" : "text-white/40"}`}
-                          >
-                            {track.artist}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={(e) => handleMenuClick(e, trackKey)}
-                            className={`track-menu w-7 h-7 rounded-lg flex items-center justify-center transition-all ${menuTrackId === trackKey
-                              ? "bg-white/20 text-white"
-                              : "text-white/40 hover:bg-white/10 hover:text-white/70"
-                              }`}
-                            title={t("search.moreOptions")}
-                          >
-                            <MoreVerticalIcon className="w-4 h-4" />
-                          </button>
-                          <span
+                            key={trackKey}
+                            ref={(el) => {
+                              search.itemRefs.current[idx] = el;
+                            }}
+                            onClick={() => handleSelection(idx)}
+                            onContextMenu={(e) => search.openContextMenu(e, track, "archive")}
                             className={`
-                              text-[10px] font-bold px-1.5 py-0.5 rounded border
-                              ${search.selectedIndex === idx
-                                ? "border-white/30 text-white/80 bg-white/20"
-                                : "border-white/10 text-white/30 bg-white/5"
-                              }
+                              relative z-10 group flex items-center gap-3 p-3 rounded-[10px] cursor-pointer
+                              ${search.selectedIndex === idx ? "text-white" : "hover:bg-white/5 hover:transition-colors hover:duration-150 text-white/90"}
                             `}
                           >
-                            IA
-                          </span>
+                            <div className="relative w-10 h-10 rounded-[6px] bg-white/5 overflow-hidden shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-200">
+                              {track.coverUrl && (
+                                <SmartImage
+                                  src={track.coverUrl}
+                                  alt={track.title}
+                                  containerClassName="w-full h-full"
+                                  imgClassName={`w-full h-full object-cover transition-opacity ${nowPlaying ? "opacity-40 blur-[1px]" : ""}`}
+                                />
+                              )}
+                              {!nowPlaying && (
+                                <div className={`absolute inset-0 flex items-center justify-center bg-black/50 ${search.selectedIndex === idx ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-hover:transition-opacity group-hover:duration-150"}`}>
+                                  <PlayIcon className="w-4 h-4 fill-white drop-shadow-md" />
+                                </div>
+                              )}
+                              {nowPlaying && isPlaying && (
+                                <div className="absolute inset-0 flex items-center justify-center gap-[2px]">
+                                  <div
+                                    className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite]"
+                                    style={{ height: "8px", color: accentColor }}
+                                  ></div>
+                                  <div
+                                    className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.2s]"
+                                    style={{ height: "14px", color: accentColor }}
+                                  ></div>
+                                  <div
+                                    className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.4s]"
+                                    style={{ height: "10px", color: accentColor }}
+                                  ></div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                              <div
+                                className={`text-[15px] font-medium truncate ${search.selectedIndex === idx ? "text-white" : nowPlaying ? "" : "text-white/90"}`}
+                                style={nowPlaying ? { color: accentColor } : {}}
+                              >
+                                {track.title}
+                              </div>
+                              <div
+                                className={`text-[13px] truncate ${search.selectedIndex === idx ? "text-white/70" : "text-white/40"}`}
+                              >
+                                {track.artist}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={(e) => handleMenuClick(e, trackKey)}
+                                className={`track-menu w-7 h-7 rounded-lg flex items-center justify-center transition-all ${menuTrackId === trackKey
+                                  ? "bg-white/20 text-white"
+                                  : "text-white/40 hover:bg-white/10 hover:text-white/70"
+                                  }`}
+                                title={t("search.moreOptions")}
+                              >
+                                <MoreVerticalIcon className="w-4 h-4" />
+                              </button>
+                              <span
+                                className={`
+                                  text-[10px] font-bold px-1.5 py-0.5 rounded border
+                                  ${search.selectedIndex === idx
+                                    ? "border-white/30 text-white/80 bg-white/20"
+                                    : "border-white/10 text-white/30 bg-white/5"
+                                  }
+                                `}
+                              >
+                                IA
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Loading Indicator for IA */}
+                      {search.archiveProvider.hasMore && (
+                        <div className="py-6 flex items-center justify-center">
+                          {search.archiveProvider.isLoading ? (
+                            <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+                          ) : (
+                            <div className="text-white/20 text-xs">
+                              {t("search.scrollForMore")}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    );
-                  })}
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </div>
           )}
-
+          <div
+            className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite]"
+            style={{ height: "8px", color: accentColor }}
+          ></div>
+          <div
+            className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.2s]"
+            style={{ height: "14px", color: accentColor }}
+          ></div>
+          <div
+            className="w-[2px] bg-current rounded-full animate-[eq-bounce_1s_ease-in-out_infinite_0.4s]"
+            style={{ height: "10px", color: accentColor }}
+          ></div>
         </div>
-
-        {/* Context Menu Portal */}
-        {search.contextMenu &&
-          createPortal(
-            <div
-              className="context-menu-container fixed z-[10000] w-48 bg-[#1e1e1e]/60 backdrop-blur-[80px] saturate-150 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left p-1.5 flex flex-col gap-0.5"
-              style={{ top: search.contextMenu.y, left: search.contextMenu.x }}
-              onContextMenu={(e) => e.preventDefault()}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (search.contextMenu!.type === "queue") {
-                    const qItem = search.contextMenu!.track as Song;
-                    const idx = queueIndexMap.get(qItem.id) ?? -1;
-                    onPlayQueueIndex(idx);
-                  } else if (search.contextMenu!.type === "netease") {
-                    playNeteaseTrack(
-                      search.contextMenu!.track as NeteaseTrackInfo,
-                    );
-                  } else if (search.contextMenu!.type === "archive") {
-                    playArchiveTrack(
-                      search.contextMenu!.track as StreamingTrack,
-                    );
-                  }
-                  search.closeContextMenu();
-                  onClose();
-                }}
-                className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors"
-              >
-                <PlayIcon className="w-4 h-4" />
-                {t("search.playNow")}
-              </button>
-
-              {search.contextMenu.type === "netease" && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addNeteaseToQueue(
-                      search.contextMenu!.track as NeteaseTrackInfo,
-                    );
-                    search.closeContextMenu();
-                  }}
-                  disabled={search.isResultInQueue(search.contextMenu.track)}
-                  className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  {t("search.addToQueue")}
-                </button>
-              )}
-              {search.contextMenu.type === "archive" && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addArchiveToQueue(
-                      search.contextMenu!.track as StreamingTrack,
-                    );
-                    search.closeContextMenu();
-                  }}
-                  disabled={search.isResultInQueue(search.contextMenu.track)}
-                  className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  {t("search.addToQueue")}
-                </button>
-              )}
-
-            </div>,
-            document.body,
-          )}
-
-        {/* Track Menu Portal */}
-        {menuTrackId && menuPosition &&
-          createPortal(
-            <div
-              className="track-menu fixed z-[10000] w-48 bg-[#1e1e1e]/60 backdrop-blur-[80px] saturate-150 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left p-1.5 flex flex-col gap-0.5"
-              style={{ top: menuPosition.y, left: menuPosition.x }}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const track = activeMenuTrack;
-                  if (track) {
-                    if (search.activeTab === "netease") {
-                      playNeteaseTrack(track as NeteaseTrackInfo);
-                    } else {
-                      playArchiveTrack(track as StreamingTrack);
-                    }
-                    closeMenu();
-                    onClose();
-                  }
-                }}
-                className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors"
-              >
-                <PlayIcon className="w-4 h-4" />
-                {t("search.playNow")}
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const track = activeMenuTrack;
-                  if (track) {
-                    if (search.activeTab === "netease") {
-                      addNeteaseToQueue(track as NeteaseTrackInfo);
-                    } else {
-                      addArchiveToQueue(track as StreamingTrack);
-                    }
-                    closeMenu();
-                  }
-                }}
-                disabled={!!activeMenuTrack && search.isResultInQueue(activeMenuTrack)}
-                className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-              >
-                <NextIcon className="w-4 h-4" />
-                {t("search.playNext")}
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const track = activeMenuTrack;
-                  if (track) {
-                    if (search.activeTab === "netease") {
-                      addNeteaseToQueue(track as NeteaseTrackInfo);
-                    } else {
-                      addArchiveToQueue(track as StreamingTrack);
-                    }
-                    closeMenu();
-                  }
-                }}
-                disabled={!!activeMenuTrack && search.isResultInQueue(activeMenuTrack)}
-                className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-              >
-                <PlusIcon className="w-4 h-4" />
-                {t("search.addToQueue")}
-              </button>
-            </div>,
-            document.body,
-          )}
+                          )}
       </div>
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+        <div
+          className={`text-[15px] font-medium truncate ${search.selectedIndex === idx ? "text-white" : nowPlaying ? "" : "text-white/90"}`}
+          style={nowPlaying ? { color: accentColor } : {}}
+        >
+          {track.title}
+        </div>
+        <div
+          className={`text-[13px] truncate ${search.selectedIndex === idx ? "text-white/70" : "text-white/40"}`}
+        >
+          {track.artist}
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={(e) => handleMenuClick(e, trackKey)}
+          className={`track-menu w-7 h-7 rounded-lg flex items-center justify-center transition-all ${menuTrackId === trackKey
+            ? "bg-white/20 text-white"
+            : "text-white/40 hover:bg-white/10 hover:text-white/70"
+            }`}
+          title={t("search.moreOptions")}
+        >
+          <MoreVerticalIcon className="w-4 h-4" />
+        </button>
+        <span
+          className={`
+                              text-[10px] font-bold px-1.5 py-0.5 rounded border
+                              ${search.selectedIndex === idx
+              ? "border-white/30 text-white/80 bg-white/20"
+              : "border-white/10 text-white/30 bg-white/5"
+            }
+                            `}
+        >
+          IA
+        </span>
+      </div>
+    </div>
+  );
+})}
+                </>
+              )}
+            </div >
+          )}
+
+        </div >
+
+  {/* Context Menu Portal */ }
+{
+  search.contextMenu &&
+  createPortal(
+    <div
+      className="context-menu-container fixed z-[10000] w-48 bg-[#1e1e1e]/60 backdrop-blur-[80px] saturate-150 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left p-1.5 flex flex-col gap-0.5"
+      style={{ top: search.contextMenu.y, left: search.contextMenu.x }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (search.contextMenu!.type === "queue") {
+            const qItem = search.contextMenu!.track as Song;
+            const idx = queueIndexMap.get(qItem.id) ?? -1;
+            onPlayQueueIndex(idx);
+          } else if (search.contextMenu!.type === "netease") {
+            playNeteaseTrack(
+              search.contextMenu!.track as NeteaseTrackInfo,
+            );
+          } else if (search.contextMenu!.type === "archive") {
+            playArchiveTrack(
+              search.contextMenu!.track as StreamingTrack,
+            );
+          }
+          search.closeContextMenu();
+          onClose();
+        }}
+        className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors"
+      >
+        <PlayIcon className="w-4 h-4" />
+        {t("search.playNow")}
+      </button>
+
+      {search.contextMenu.type === "netease" && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            addNeteaseToQueue(
+              search.contextMenu!.track as NeteaseTrackInfo,
+            );
+            search.closeContextMenu();
+          }}
+          disabled={search.isResultInQueue(search.contextMenu.track)}
+          className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+        >
+          <PlusIcon className="w-4 h-4" />
+          {t("search.addToQueue")}
+        </button>
+      )}
+      {search.contextMenu.type === "archive" && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            addArchiveToQueue(
+              search.contextMenu!.track as StreamingTrack,
+            );
+            search.closeContextMenu();
+          }}
+          disabled={search.isResultInQueue(search.contextMenu.track)}
+          className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+        >
+          <PlusIcon className="w-4 h-4" />
+          {t("search.addToQueue")}
+        </button>
+      )}
+
     </div>,
     document.body,
+  )
+}
+
+{/* Track Menu Portal */ }
+{
+  menuTrackId && menuPosition &&
+  createPortal(
+    <div
+      className="track-menu fixed z-[10000] w-48 bg-[#1e1e1e]/60 backdrop-blur-[80px] saturate-150 border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left p-1.5 flex flex-col gap-0.5"
+      style={{ top: menuPosition.y, left: menuPosition.x }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          const track = activeMenuTrack;
+          if (track) {
+            if (search.activeTab === "netease") {
+              playNeteaseTrack(track as NeteaseTrackInfo);
+            } else {
+              playArchiveTrack(track as StreamingTrack);
+            }
+            closeMenu();
+            onClose();
+          }
+        }}
+        className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors"
+      >
+        <PlayIcon className="w-4 h-4" />
+        {t("search.playNow")}
+      </button>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          const track = activeMenuTrack;
+          if (track) {
+            if (search.activeTab === "netease") {
+              addNeteaseToQueue(track as NeteaseTrackInfo);
+            } else {
+              addArchiveToQueue(track as StreamingTrack);
+            }
+            closeMenu();
+          }
+        }}
+        disabled={!!activeMenuTrack && search.isResultInQueue(activeMenuTrack)}
+        className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+      >
+        <NextIcon className="w-4 h-4" />
+        {t("search.playNext")}
+      </button>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          const track = activeMenuTrack;
+          if (track) {
+            if (search.activeTab === "netease") {
+              addNeteaseToQueue(track as NeteaseTrackInfo);
+            } else {
+              addArchiveToQueue(track as StreamingTrack);
+            }
+            closeMenu();
+          }
+        }}
+        disabled={!!activeMenuTrack && search.isResultInQueue(activeMenuTrack)}
+        className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+      >
+        <PlusIcon className="w-4 h-4" />
+        {t("search.addToQueue")}
+      </button>
+    </div>,
+    document.body,
+  )
+}
+      </div >
+    </div >,
+  document.body,
   );
 };
 
