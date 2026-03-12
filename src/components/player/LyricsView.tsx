@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useMemo } from "react";
-import { LyricLine as LyricLineType } from "../types";
+import { LyricLine as LyricLineType } from "../../types";
 import {
   findActiveLyricLineIndex,
   findActiveLyricWordIndex,
-} from "../utils/lyricsLookup";
+} from "../../utils/lyricsLookup";
 
 interface LyricsViewProps {
   lyrics: LyricLineType[];

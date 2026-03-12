@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSpring, animated } from "@react-spring/web";
-import { useI18n } from "../contexts/I18nContext";
+import { useI18n } from "../../contexts/I18nContext";
 import { FastForwardIcon } from "./Icons";
 
 interface SpeedIndicatorProps {
@@ -52,7 +52,7 @@ const SpeedIndicator: React.FC<SpeedIndicatorProps> = ({ speed, show }) => {
         "
       >
         <FastForwardIcon className="w-5 h-5 text-white" />
-        
+
         <div className="flex flex-col items-center">
           <div className="text-2xl font-bold text-white tracking-tight">
             {speed.toFixed(2)}x
@@ -61,7 +61,7 @@ const SpeedIndicator: React.FC<SpeedIndicatorProps> = ({ speed, show }) => {
             {getSpeedLabel()}
           </div>
         </div>
-        
+
         {/* Speed Bar */}
         <div className="w-24 h-2 bg-white/20 rounded-full overflow-hidden">
           <div

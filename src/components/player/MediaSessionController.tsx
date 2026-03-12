@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { PlayState, Song } from "../types";
-import { fetchImageBlobWithCache } from "../services/cache";
+import { PlayState, Song } from "../../types";
+import { fetchImageBlobWithCache } from "../../services/cache";
 
 const MEDIA_SESSION_SEEK_STEP = 10;
 
@@ -84,12 +84,12 @@ const MediaSessionController: React.FC<MediaSessionControllerProps> = ({
         artwork:
           artworkSrc || currentSong.coverUrl
             ? [
-                {
-                  src: artworkSrc || currentSong.coverUrl!,
-                  sizes: "512x512",
-                  type: "image/jpeg",
-                },
-              ]
+              {
+                src: artworkSrc || currentSong.coverUrl!,
+                sizes: "512x512",
+                type: "image/jpeg",
+              },
+            ]
             : undefined,
       });
     }
@@ -139,26 +139,26 @@ const MediaSessionController: React.FC<MediaSessionControllerProps> = ({
     const handlers: Array<
       [MediaSessionAction, MediaSessionActionHandler | null]
     > = [
-      ["play", onPlay],
-      ["pause", onPause],
-      ["previoustrack", onPrev],
-      ["nexttrack", onNext],
-      ["seekto", seekToHandler],
-      [
-        "seekbackward",
-        (details?: MediaSessionActionDetails) => {
-          const offset = details?.seekOffset ?? MEDIA_SESSION_SEEK_STEP;
-          clampedSeek(currentTime - offset);
-        },
-      ],
-      [
-        "seekforward",
-        (details?: MediaSessionActionDetails) => {
-          const offset = details?.seekOffset ?? MEDIA_SESSION_SEEK_STEP;
-          clampedSeek(currentTime + offset);
-        },
-      ],
-    ];
+        ["play", onPlay],
+        ["pause", onPause],
+        ["previoustrack", onPrev],
+        ["nexttrack", onNext],
+        ["seekto", seekToHandler],
+        [
+          "seekbackward",
+          (details?: MediaSessionActionDetails) => {
+            const offset = details?.seekOffset ?? MEDIA_SESSION_SEEK_STEP;
+            clampedSeek(currentTime - offset);
+          },
+        ],
+        [
+          "seekforward",
+          (details?: MediaSessionActionDetails) => {
+            const offset = details?.seekOffset ?? MEDIA_SESSION_SEEK_STEP;
+            clampedSeek(currentTime + offset);
+          },
+        ],
+      ];
 
     handlers.forEach(([action, handler]) => {
       try {

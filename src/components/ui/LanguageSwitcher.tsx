@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSpring, animated, useTransition } from "@react-spring/web";
-import { useI18n } from "../contexts/I18nContext";
-import { Locale, localeNames } from "../i18n";
-import { useTheme } from "../contexts/ThemeContext";
+import { useI18n } from "../../contexts/I18nContext";
+import { Locale, localeNames } from "../../i18n";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface LanguageSwitcherProps {
   className?: string;
   variant?: 'default' | 'settings' | 'topbar'; // 新增 topbar 变体
 }
 
-const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ 
-  className = "", 
-  variant = 'default' 
+const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
+  className = "",
+  variant = 'default'
 }) => {
   const { locale, setLocale, t } = useI18n();
   const { theme } = useTheme();
@@ -32,7 +32,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     e.preventDefault();
     const currentIndex = locales.indexOf(locale);
     let nextIndex: number;
-    
+
     if (e.deltaY > 0) {
       // 向下滚动，切换到下一个语言
       nextIndex = (currentIndex + 1) % locales.length;
@@ -40,7 +40,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       // 向上滚动，切换到上一个语言
       nextIndex = (currentIndex - 1 + locales.length) % locales.length;
     }
-    
+
     setLocale(locales[nextIndex]);
   };
 
@@ -68,9 +68,8 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
       <div ref={containerRef} className={`relative ${className}`} onWheel={handleWheel}>
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${
-            showMenu ? "text-white bg-white/20 scale-110" : "text-white/80 hover:bg-white/20 hover:text-white"
-          }`}
+          className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${showMenu ? "text-white bg-white/20 scale-110" : "text-white/80 hover:bg-white/20 hover:text-white"
+            }`}
           title={t("topBar.language")}
           aria-label={t("topBar.language")}
         >

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlowingLayer, createFlowingLayers, defaultColors as mobileDefaultColors } from "./background/mobile";
-import { UIBackgroundRender } from "./background/renderer/UIBackgroundRender";
+import { FlowingLayer, createFlowingLayers, defaultColors as mobileDefaultColors } from "./Background/mobile";
+import { UIBackgroundRender } from "./Background/renderer/UIBackgroundRender";
 
 const desktopGradientDefaults = [
   "rgb(30, 30, 60)",
@@ -136,9 +136,9 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({
     const palette = colorsRef.current && colorsRef.current.length > 0
       ? colorsRef.current
       : desktopGradientDefaults;
-    
+
     const gradient = ctx.createLinearGradient(0, 0, width, height);
-    
+
     // 让第一个颜色（最主要的）占更大比例
     if (palette.length >= 3) {
       gradient.addColorStop(0, palette[0]);
@@ -151,7 +151,7 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({
         gradient.addColorStop(index / Math.max(1, palette.length - 1), color);
       });
     }
-    
+
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
   }, []);

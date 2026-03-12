@@ -1,9 +1,9 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import { useSpring, animated } from '@react-spring/web';
-import SmartImage from '../SmartImage';
-import { useI18n } from '../../contexts/I18nContext';
-import { MoreVerticalIcon } from '../Icons';
-import { useTheme } from '../../contexts/ThemeContext';
+import SmartImage from '../../common/SmartImage';
+import { useI18n } from '../../../contexts/I18nContext';
+import { MoreVerticalIcon } from '../../common/Icons';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface CoverCardProps {
   coverUrl?: string;
@@ -15,8 +15,8 @@ interface CoverCardProps {
   artist?: string;
 }
 
-const CoverCard: React.FC<CoverCardProps> = ({ 
-  coverUrl, 
+const CoverCard: React.FC<CoverCardProps> = ({
+  coverUrl,
   isPlaying,
   showSettingsPopup = false,
   setShowSettingsPopup,
@@ -27,7 +27,7 @@ const CoverCard: React.FC<CoverCardProps> = ({
   const { t } = useI18n();
   const { theme } = useTheme();
   const settingsContainerRef = useRef<HTMLDivElement>(null);
-  
+
   const displayCover = coverUrl;
 
   // Close settings popup when clicking outside
@@ -81,11 +81,10 @@ const CoverCard: React.FC<CoverCardProps> = ({
           <div className="relative flex-shrink-0" ref={settingsContainerRef}>
             <button
               onClick={() => setShowSettingsPopup(!showSettingsPopup)}
-              className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${
-                showSettingsPopup
-                  ? theme === 'light' ? 'bg-black/10 text-black' : 'bg-white/10 text-white'
-                  : theme === 'light' ? 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-              }`}
+              className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${showSettingsPopup
+                ? theme === 'light' ? 'bg-black/10 text-black' : 'bg-white/10 text-white'
+                : theme === 'light' ? 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                }`}
               title={t("player.settings")}
             >
               <MoreVerticalIcon className="w-5 h-5" />

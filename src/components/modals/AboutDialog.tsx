@@ -1,6 +1,6 @@
 import React from "react";
 import { createPortal } from "react-dom";
-import { useI18n } from "../contexts/I18nContext";
+import { useI18n } from "../../contexts/I18nContext";
 
 interface AboutDialogProps {
     isOpen: boolean;
@@ -9,7 +9,7 @@ interface AboutDialogProps {
 
 const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
     const { t } = useI18n();
-    
+
     if (!isOpen) return null;
 
     return createPortal(

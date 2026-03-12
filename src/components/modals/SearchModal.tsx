@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { SearchIcon, PlayIcon, PlusIcon, MoreVerticalIcon, NextIcon } from "./Icons";
-import SmartImage from "./SmartImage";
-import { Song } from "../types";
+import { SearchIcon, PlayIcon, PlusIcon, MoreVerticalIcon, NextIcon } from "../common/Icons";
+import SmartImage from "../common/SmartImage";
+import { Song } from "../../types";
 import {
   getNeteaseAudioUrl,
   NeteaseTrackInfo,
-} from "../services/music/lyricsService";
-import { StreamingTrack } from "../services/streaming/types";
-import { useKeyboardScope } from "../hooks/useKeyboardScope";
-import { useSearchModal } from "../hooks/useSearchModal";
-import { useI18n } from "../contexts/I18nContext";
-import { buildSongIdIndexMap } from "../utils/songLookup";
+} from "../../services/music/lyricsService";
+import { StreamingTrack } from "../../services/streaming/types";
+import { useKeyboardScope } from "../../hooks/useKeyboardScope";
+import { useSearchModal } from "../../hooks/useSearchModal";
+import { useI18n } from "../../contexts/I18nContext";
+import { buildSongIdIndexMap } from "../../utils/songLookup";
 
 interface SearchModalProps {
   isOpen: boolean;

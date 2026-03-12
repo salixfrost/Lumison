@@ -1,4 +1,4 @@
-import { loadImageElementWithCache } from "../../../services/cache";
+import { loadImageElementWithCache } from "../../../../services/cache";
 
 interface FlowingLayer {
   image: HTMLCanvasElement;

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { LinkIcon } from "./Icons";
-import { useI18n } from "../contexts/I18nContext";
+import { LinkIcon } from "../common/Icons";
+import { useI18n } from "../../contexts/I18nContext";
 
 interface ImportMusicDialogProps {
   isOpen: boolean;
@@ -108,8 +108,8 @@ const ImportMusicDialog: React.FC<ImportMusicDialogProps> = ({
             onClick={handleImport}
             disabled={isLoading}
             className={`py-4 text-[17px] font-semibold transition-colors flex items-center justify-center gap-2 ${isLoading
-                ? "text-white/40 cursor-not-allowed"
-                : "text-blue-400 hover:bg-white/5 active:bg-white/10"
+              ? "text-white/40 cursor-not-allowed"
+              : "text-blue-400 hover:bg-white/5 active:bg-white/10"
               }`}
           >
             {isLoading ? (

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useSpring, animated, useTransition, to } from "@react-spring/web";
-import { formatTime } from "../services/utils";
-import { SpatialAudioEngine } from "../services/audio/SpatialAudioEngine";
+import { formatTime } from "../../services/utils";
+import { SpatialAudioEngine } from "../../services/audio/SpatialAudioEngine";
 import CoverCard from "./controls/CoverCard";
 import {
   LoopIcon,
@@ -23,10 +23,10 @@ import {
   WaveformIcon,
   ReverbIcon,
   SpatialAudioIcon,
-} from "./Icons";
-import { PlayMode } from "../types";
-import { useTheme } from "../contexts/ThemeContext";
-import { useI18n } from "../contexts/I18nContext";
+} from "../common/Icons";
+import { PlayMode } from "../../types";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useI18n } from "../../contexts/I18nContext";
 
 // Cache one spatial engine per audio element to avoid duplicate MediaElementSource creation.
 const spatialEngineCache = new WeakMap<HTMLAudioElement, SpatialAudioEngine>();

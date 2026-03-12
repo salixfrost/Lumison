@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
-import { formatTime } from '../../services/utils';
-import { useTheme } from '../../contexts/ThemeContext';
+import { formatTime } from '../../../services/utils';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ProgressBarProps {
   currentTime: number;

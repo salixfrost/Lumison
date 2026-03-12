@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UpdateService } from '../services/updateService';
-import { useI18n } from '../contexts/I18nContext';
+import { UpdateService } from '../../services/updateService';
+import { useI18n } from '../../contexts/I18nContext';
 
 interface UpdateNotificationProps {
   version: string;

@@ -1,13 +1,13 @@
 /// <reference types="vite/client" />
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { InfoIcon, FullscreenIcon, SettingsIcon, ThemeIcon, MinimizeIcon, MaximizeIcon, RestoreIcon, CloseIcon } from "./Icons";
-import AboutDialog from "./AboutDialog";
-import ImportMusicDialog from "./ImportMusicDialog";
-import LanguageSwitcher from "./LanguageSwitcher";
-import { useTheme } from "../contexts/ThemeContext";
-import { useI18n } from "../contexts/I18nContext";
+import { InfoIcon, FullscreenIcon, SettingsIcon, ThemeIcon, MinimizeIcon, MaximizeIcon, RestoreIcon, CloseIcon } from "../common/Icons";
+import AboutDialog from "../modals/AboutDialog";
+import ImportMusicDialog from "../modals/ImportMusicDialog";
+import LanguageSwitcher from "../ui/LanguageSwitcher";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useI18n } from "../../contexts/I18nContext";
 import { Window } from "@tauri-apps/api/window";
-import { UpdateService } from "../services/updateService";
+import { UpdateService } from "../../services/updateService";
 
 interface TopBarProps {
   disabled?: boolean;

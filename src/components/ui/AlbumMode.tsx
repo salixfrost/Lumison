@@ -1,8 +1,8 @@
 import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
-import SmartImage from './SmartImage';
-import { useI18n } from '../contexts/I18nContext';
-import { formatTime } from '../services/utils';
-import { LyricLine as LyricLineType } from '../types';
+import SmartImage from '../common/SmartImage';
+import { useI18n } from '../../contexts/I18nContext';
+import { formatTime } from '../../services/utils';
+import { LyricLine as LyricLineType } from '../../types';
 import './AlbumMode.css';
 
 interface AlbumModeProps {
@@ -41,7 +41,7 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
   // Find current lyric line
   const currentLyricIndex = useMemo(() => {
     if (!lyrics || lyrics.length === 0) return -1;
-    
+
     for (let i = lyrics.length - 1; i >= 0; i--) {
       if (currentTime >= lyrics[i].time) {
         return i;
@@ -53,10 +53,10 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
   // Find current word in active line
   const getCurrentWordIndex = useCallback((lineIndex: number) => {
     if (lineIndex < 0 || !lyrics[lineIndex]?.words) return -1;
-    
+
     const line = lyrics[lineIndex];
     const words = line.words || [];
-    
+
     for (let i = words.length - 1; i >= 0; i--) {
       if (currentTime >= words[i].startTime) {
         return i;
@@ -68,10 +68,10 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
   // Auto-scroll lyrics
   useEffect(() => {
     if (!showLyrics || !lyricsContainerRef.current || currentLyricIndex < 0) return;
-    
+
     const container = lyricsContainerRef.current;
     const currentLine = container.querySelector(`[data-index="${currentLyricIndex}"]`);
-    
+
     if (currentLine) {
       currentLine.scrollIntoView({
         behavior: 'smooth',
@@ -133,16 +133,16 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (duration === 0) return;
-      
+
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
       const x = e.clientX;
       const y = e.clientY;
-      
+
       // Determine which edge was clicked and calculate progress
       const edgeThreshold = 30; // pixels from edge - increased for better UX
       let percentage = -1; // -1 means not on any edge
-      
+
       if (y <= edgeThreshold) {
         // Top edge
         percentage = (x / windowWidth) * 0.25;
@@ -156,7 +156,7 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
         // Left edge
         percentage = 0.75 + ((windowHeight - y) / windowHeight) * 0.25;
       }
-      
+
       // Only seek if we clicked on an edge
       if (percentage >= 0) {
         onSeek(Math.max(0, Math.min(1, percentage)) * duration);
@@ -167,20 +167,20 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
 
   const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (duration === 0) return;
-    
+
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
     const x = e.clientX;
     const y = e.clientY;
-    
+
     // Check if click is on an edge
     const edgeThreshold = 30;
-    const isOnEdge = 
-      y <= edgeThreshold || 
-      x >= windowWidth - edgeThreshold || 
-      y >= windowHeight - edgeThreshold || 
+    const isOnEdge =
+      y <= edgeThreshold ||
+      x >= windowWidth - edgeThreshold ||
+      y >= windowHeight - edgeThreshold ||
       x <= edgeThreshold;
-    
+
     if (isOnEdge) {
       setIsDragging(true);
       // Immediately seek on mouse down
@@ -214,7 +214,7 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
       {showLyrics ? (
         /* Lyrics Display with word-by-word highlighting */
         <div className="lyrics-mode-wrapper">
-          <div 
+          <div
             ref={lyricsContainerRef}
             className="lyrics-mode-container"
           >
@@ -229,9 +229,8 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
                   <div
                     key={index}
                     data-index={index}
-                    className={`lyrics-mode-line ${
-                      isActive ? 'active' : ''
-                    } ${isPassed ? 'passed' : ''}`}
+                    className={`lyrics-mode-line ${isActive ? 'active' : ''
+                      } ${isPassed ? 'passed' : ''}`}
                     onClick={() => onSeek(line.time)}
                   >
                     {hasWords ? (
@@ -239,9 +238,8 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
                         {line.words!.map((word, wordIndex) => (
                           <span
                             key={wordIndex}
-                            className={`lyrics-mode-word ${
-                              isActive && wordIndex <= currentWordIndex ? 'active' : ''
-                            }`}
+                            className={`lyrics-mode-word ${isActive && wordIndex <= currentWordIndex ? 'active' : ''
+                              }`}
                             style={{
                               color: isActive && wordIndex <= currentWordIndex ? accentColor : undefined,
                             }}
@@ -251,7 +249,7 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
                         ))}
                       </div>
                     ) : (
-                      <div 
+                      <div
                         className="lyrics-mode-text"
                         style={{
                           color: isActive ? accentColor : undefined,
@@ -306,59 +304,59 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
             <span className="total-time">{formatTime(duration)}</span>
           </div>
           <div
-          ref={progressBarRef}
-          className="border-progress-container"
-          onMouseDown={handleProgressMouseDown}
-          onMouseMove={handleProgressMouseMove}
-          onMouseUp={handleProgressMouseUp}
-        >
-          {/* Background borders */}
-          <div className="border-progress-bg top" />
-          <div className="border-progress-bg right" />
-          <div className="border-progress-bg bottom" />
-          <div className="border-progress-bg left" />
-          
-          {/* Active progress borders */}
-          <div
-            className="border-progress-fill top"
-            style={{
-              width: `${borderProgress.top}%`,
-              backgroundColor: accentColor,
-            }}
-          />
-          <div
-            className="border-progress-fill right"
-            style={{
-              height: `${borderProgress.right}%`,
-              backgroundColor: accentColor,
-            }}
-          />
-          <div
-            className="border-progress-fill bottom"
-            style={{
-              width: `${borderProgress.bottom}%`,
-              backgroundColor: accentColor,
-            }}
-          />
-          <div
-            className="border-progress-fill left"
-            style={{
-              height: `${borderProgress.left}%`,
-              backgroundColor: accentColor,
-            }}
-          />
-          
-          {/* Progress thumb */}
-          <div
-            className="border-progress-thumb"
-            style={{
-              left: thumbPosition.left,
-              top: thumbPosition.top,
-              backgroundColor: accentColor,
-            }}
-          />
+            ref={progressBarRef}
+            className="border-progress-container"
+            onMouseDown={handleProgressMouseDown}
+            onMouseMove={handleProgressMouseMove}
+            onMouseUp={handleProgressMouseUp}
+          >
+            {/* Background borders */}
+            <div className="border-progress-bg top" />
+            <div className="border-progress-bg right" />
+            <div className="border-progress-bg bottom" />
+            <div className="border-progress-bg left" />
+
+            {/* Active progress borders */}
+            <div
+              className="border-progress-fill top"
+              style={{
+                width: `${borderProgress.top}%`,
+                backgroundColor: accentColor,
+              }}
+            />
+            <div
+              className="border-progress-fill right"
+              style={{
+                height: `${borderProgress.right}%`,
+                backgroundColor: accentColor,
+              }}
+            />
+            <div
+              className="border-progress-fill bottom"
+              style={{
+                width: `${borderProgress.bottom}%`,
+                backgroundColor: accentColor,
+              }}
+            />
+            <div
+              className="border-progress-fill left"
+              style={{
+                height: `${borderProgress.left}%`,
+                backgroundColor: accentColor,
+              }}
+            />
+
+            {/* Progress thumb */}
+            <div
+              className="border-progress-thumb"
+              style={{
+                left: thumbPosition.left,
+                top: thumbPosition.top,
+                backgroundColor: accentColor,
+              }}
+            />
+          </div>
         </div>
-      </div>
       )}
     </div>
   );

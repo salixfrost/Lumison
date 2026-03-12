@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTransition, animated } from '@react-spring/web';
-import { Song } from '../types';
-import { CheckIcon, PlusIcon, QueueIcon, TrashIcon, SelectAllIcon, CloudDownloadIcon, SearchIcon, InfoIcon } from './Icons';
-import { useKeyboardScope } from '../hooks/useKeyboardScope';
-import ImportMusicDialog from './ImportMusicDialog';
-import SmartImage from './SmartImage';
-import { useI18n } from '../contexts/I18nContext';
-import { buildSongIdIndexMap } from '../utils/songLookup';
+import { Song } from '../../types';
+import { CheckIcon, PlusIcon, QueueIcon, TrashIcon, SelectAllIcon, CloudDownloadIcon, SearchIcon, InfoIcon } from '../common/Icons';
+import { useKeyboardScope } from '../../hooks/useKeyboardScope';
+import ImportMusicDialog from '../modals/ImportMusicDialog';
+import SmartImage from '../common/SmartImage';
+import { useI18n } from '../../contexts/I18nContext';
+import { buildSongIdIndexMap } from '../../utils/songLookup';
 
 const IOS_SCROLLBAR_STYLES = `
   .playlist-scrollbar {

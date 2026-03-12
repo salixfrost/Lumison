@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ToastContext, Toast, ToastType } from '../hooks/useToast';
+import { ToastContext, Toast, ToastType } from '../../hooks/useToast';
 import { CheckIcon } from './Icons';
 
 const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {

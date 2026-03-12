@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { imageResourceCache } from "../services/cache";
+import { imageResourceCache } from "../../services/cache";
 
 const makeCacheKey = (src: string, width: number, height: number) => {
   const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
