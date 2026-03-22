@@ -35,6 +35,48 @@ export default {
     off: "关闭",
   },
 
+  // 空间音频
+  spatialAudio: {
+    title: "3D 空间音频",
+    subtitle: "影院级沉浸体验",
+    on: "开启",
+    off: "关闭",
+    active: "已激活",
+    inactive: "未激活",
+    presets: "预设",
+    music: "音乐",
+    cinema: "影院",
+    vocal: "人声",
+    advanced: "高级设置",
+    equalizer: "五段均衡器",
+    spatial: "空间参数",
+    sub: "超低音",
+    bass: "低音",
+    mid: "中音",
+    highMid: "中高音",
+    treble: "高音",
+    width: "宽度",
+    depth: "深度",
+    height: "高度",
+    roomSize: "房间大小",
+    distance: "距离",
+    disclaimer: "⚠️ 这不是真正的 Dolby Atmos，这是一个模拟空间增强系统，用于沉浸式耳机聆听体验。",
+  },
+
+  // 专注模式
+  focus: {
+    session: "专注模式",
+    duration: "选择时长",
+    minutes: "分钟",
+    seconds: "秒",
+    start: "开始",
+    pause: "暂停",
+    resume: "继续",
+    finish: "完成",
+    custom: "自定义",
+    autoPause: "完成后自动暂停",
+  },
+
   // 播放器控制
   player: {
     play: "播放",
@@ -52,6 +94,20 @@ export default {
     noMusicLoaded: "未加载音乐",
     welcomeTitle: "欢迎使用 Lumison",
     selectSong: "选择一首歌曲",
+  },
+
+  // 专注模式
+  focus: {
+    session: "专注模式",
+    duration: "选择时长",
+    custom: "自定义",
+    minutes: "分钟",
+    seconds: "秒",
+    start: "开始",
+    pause: "暂停",
+    resume: "继续",
+    finish: "完成",
+    autoPause: "完成后自动暂停",
   },
 
   // 倍速设置

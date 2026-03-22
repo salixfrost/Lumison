@@ -1,7 +1,6 @@
 import React, { Suspense, lazy, useCallback, useState, useRef, useEffect, useMemo } from "react";
 import { useToast } from "./hooks/useToast";
 import ShaderBackground from "./components/layout/ShaderBackground";
-import FluidBackground from "./components/layout/FluidBackground";
 import Controls from "./components/player/Controls";
 import LyricsView from "./components/player/LyricsView";
 import KeyboardShortcuts from "./components/ui/KeyboardShortcuts";
@@ -11,11 +10,11 @@ import { usePlaylist } from "./hooks/usePlaylist";
 import { usePlayer } from "./hooks/usePlayer";
 import { keyboardRegistry } from "./services/ui/keyboardRegistry";
 import MediaSessionController from "./components/player/MediaSessionController";
-import { useTheme } from "./contexts/ThemeContext";
 import { useI18n } from "./contexts/I18nContext";
+import { usePlayerContext } from "./contexts/PlayerContext";
+import FocusSessionModal from "./components/modals/FocusSessionModal";
 import { getSupportedAudioFormats } from "./services/utils";
 import { usePerformanceOptimization, useOptimizedAudio } from "./hooks/usePerformanceOptimization";
-import { UpdateService } from "./services/updateService";
 import { getPlatformConfig } from "./services/music/multiPlatformLyrics";
 import { PlayState, Song } from "./types";
 import { useWebViewOptimization, useOptimizedBackdropFilter } from "./hooks/useWebViewOptimization";
@@ -23,18 +22,19 @@ import { buildSongLookupIndexMap, getSongLookupKey } from "./utils/songLookup";
 
 const importPlaylistPanel = () => import("./components/player/PlaylistPanel");
 const importSearchModal = () => import("./components/modals/SearchModal");
-const importUpdateNotification = () => import("./components/modals/UpdateNotification");
 const importAlbumMode = () => import("./components/ui/AlbumMode");
+const importImportMusicDialog = () => import("./components/modals/ImportMusicDialog");
 
 const LazyPlaylistPanel = lazy(importPlaylistPanel);
 const LazySearchModal = lazy(importSearchModal);
-const LazyUpdateNotification = lazy(importUpdateNotification);
 const LazyAlbumMode = lazy(importAlbumMode);
+const LazyImportMusicDialog = lazy(importImportMusicDialog);
 
 const App: React.FC = () => {
   const { toast } = useToast();
-  const { theme } = useTheme();
   const { t } = useI18n();
+  const { focusSession } = usePlayerContext();
+  const [showFocusSessionModal, setShowFocusSessionModal] = useState(false);
 
   // Performance monitoring
   usePerformanceOptimization();
@@ -60,25 +60,7 @@ const App: React.FC = () => {
     console.log('       • ChartLyrics, Musixmatch, OpenLyrics');
   }, []);
 
-  // Check for updates on app start (silent check)
-  useEffect(() => {
-    const checkUpdates = async () => {
-      try {
-        const updateInfo = await UpdateService.checkForUpdates();
-        if (updateInfo.available && updateInfo.latestVersion) {
-          // Wait 3 seconds before showing notification (don't interrupt startup)
-          setTimeout(() => {
-            setUpdateVersion(updateInfo.latestVersion!);
-            setUpdateAvailable(true);
-          }, 3000);
-        }
-      } catch (error) {
-        console.error('Update check failed:', error);
-      }
-    };
 
-    checkUpdates();
-  }, []);
 
   const playlist = usePlaylist();
   const player = usePlayer({
@@ -117,12 +99,11 @@ const App: React.FC = () => {
 
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [hasOpenedPlaylist, setHasOpenedPlaylist] = useState(false);
   const [hasOpenedSearch, setHasOpenedSearch] = useState(false);
   const [showVolumePopup, setShowVolumePopup] = useState(false);
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [updateVersion, setUpdateVersion] = useState("");
   const [volume, setVolume] = useState(1);
   const [showSpeedIndicator, setShowSpeedIndicator] = useState(false);
   const speedIndicatorTimerRef = useRef<number | null>(null);
@@ -141,9 +122,6 @@ const App: React.FC = () => {
     return window.innerWidth;
   });
   const [lyricsFontSize, setLyricsFontSize] = useState(42);
-
-  // Background type state
-  const [backgroundType, setBackgroundType] = useState<'fluid' | 'shader1'>('fluid');
 
   // View mode state - 'default' or 'lyrics'
   const [viewMode, setViewMode] = useState<'default' | 'lyrics'>('default');
@@ -172,10 +150,6 @@ const App: React.FC = () => {
     void importSearchModal();
   }, []);
 
-  const preloadUpdateNotification = useCallback(() => {
-    void importUpdateNotification();
-  }, []);
-
   const preloadAlbumMode = useCallback(() => {
     void importAlbumMode();
   }, []);
@@ -184,6 +158,17 @@ const App: React.FC = () => {
     preloadSearchModal();
     setShowSearch(true);
   }, [preloadSearchModal]);
+
+  const handleCloseFocusModal = useCallback(() => {
+    setShowFocusSessionModal(false);
+  }, []);
+
+  const handleFocusSessionComplete = useCallback((shouldPause?: boolean) => {
+    setShowFocusSessionModal(false);
+    if (shouldPause && pause) {
+      pause();
+    }
+  }, [pause]);
 
   const handleOpenPlaylist = useCallback(() => {
     preloadPlaylistPanel();
@@ -325,7 +310,6 @@ const App: React.FC = () => {
       preloadSearchModal();
       preloadPlaylistPanel();
       preloadAlbumMode();
-      preloadUpdateNotification();
     };
 
     const onFirstInteraction = () => {
@@ -362,7 +346,7 @@ const App: React.FC = () => {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [preloadAlbumMode, preloadPlaylistPanel, preloadSearchModal, preloadUpdateNotification]);
+  }, [preloadAlbumMode, preloadPlaylistPanel, preloadSearchModal]);
 
   useEffect(() => {
     if (showPlaylist) {
@@ -549,7 +533,44 @@ const App: React.FC = () => {
   // Memoize controls section to prevent unnecessary re-renders
   const controlsSection = useMemo(() => {
     if (!hasLoadedSong) {
-      return null;
+      return (
+        <div className="flex flex-col items-center justify-center w-full h-full gap-8 px-6">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <p className="text-white/90 text-2xl font-semibold tracking-tight">{t("player.welcomeTitle")}</p>
+            <p className="text-white/40 text-sm">{t("player.selectSong")}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <label className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              {t("playlist.importLocal")}
+              <input type="file" accept="audio/*" multiple className="hidden" onChange={(e) => e.target.files && handleFileChange(e.target.files)} />
+            </label>
+            <button
+              type="button"
+              onClick={handleOpenSearch}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              {t("search.title")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowImportDialog(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.101-1.102" />
+              </svg>
+              {t("playlist.importUrl")}
+            </button>
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -605,7 +626,7 @@ const App: React.FC = () => {
         </div>
       </div>
     );
-  }, [hasLoadedSong, playState, currentTime, duration, currentSong?.title, currentSong?.artist, currentSong?.id, currentSong?.coverUrl, t, playNext, playPrev, playMode, accentColor, volume, player.speed, player.preservesPitch, isBuffering, showVolumePopup, showSettingsPopup, showPlaylist, playlist.queue, playlist.removeSongs, hasEverPlayed, handleOpenPlaylist, handleOpenSearch]);
+  }, [hasLoadedSong, playState, currentTime, duration, currentSong?.title, currentSong?.artist, currentSong?.id, currentSong?.coverUrl, t, playNext, playPrev, playMode, accentColor, volume, player.speed, player.preservesPitch, isBuffering, showVolumePopup, showSettingsPopup, showPlaylist, playlist.queue, playlist.removeSongs, hasEverPlayed, handleOpenPlaylist, handleOpenSearch, handleImportUrl, handleFileChange, setShowImportDialog]);
 
   const lyricsVersion = currentSong?.lyrics ? currentSong.lyrics.length : 0;
   const lyricsKey = currentSong ? `${currentSong.id}-${lyricsVersion}` : "no-song";
@@ -640,22 +661,10 @@ const App: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen flex flex-col overflow-hidden theme-transition bg-black">
-      {backgroundType === 'fluid' && (
-        <FluidBackground
-          key={isMobileLayout ? "mobile" : "desktop"}
-          colors={currentSong?.colors || []}
-          coverUrl={currentSong?.coverUrl}
-          isPlaying={playState === PlayState.PLAYING}
-          isMobileLayout={isMobileLayout}
-          theme={theme}
-        />
-      )}
-      {backgroundType === 'shader1' && (
-        <ShaderBackground
-          isPlaying={playState === PlayState.PLAYING}
-          colors={currentSong?.colors || []}
-        />
-      )}
+      <ShaderBackground
+        isPlaying={playState === PlayState.PLAYING}
+        colors={currentSong?.colors || []}
+      />
 
       <audio
         ref={audioRef}
@@ -686,17 +695,6 @@ const App: React.FC = () => {
 
       <SpeedIndicator speed={player.speed} show={showSpeedIndicator} />
 
-      {/* Update Notification */}
-      {updateAvailable && (
-        <Suspense fallback={null}>
-          <LazyUpdateNotification
-            version={updateVersion}
-            onClose={() => setUpdateAvailable(false)}
-            onUpdate={() => { }}
-          />
-        </Suspense>
-      )}
-
       <MediaSessionController
         currentSong={currentSong ?? null}
         playState={playState}
@@ -724,9 +722,9 @@ const App: React.FC = () => {
             artist: currentSong.artist,
             coverUrl: currentSong.coverUrl,
           } : null}
-          backgroundType={backgroundType}
-          onBackgroundTypeChange={setBackgroundType}
           isPlaying={playState === PlayState.PLAYING}
+          focusSession={focusSession}
+          onToggleFocusSession={() => setShowFocusSessionModal(true)}
         />
       )}
 
@@ -753,6 +751,16 @@ const App: React.FC = () => {
         </button>
       )}
 
+      {/* Focus Session Modal */}
+      <FocusSessionModal
+        isOpen={showFocusSessionModal}
+        onClose={handleCloseFocusModal}
+        onSessionComplete={handleFocusSessionComplete}
+        isActive={focusSession?.isActive}
+        remainingTime={focusSession?.remainingTime || 1500}
+        initialDuration={focusSession?.remainingTime || 1500}
+      />
+
       {/* Search Modal - Always rendered to preserve state, visibility handled internally */}
       {(hasOpenedSearch || showSearch) && (
         <Suspense fallback={null}>
@@ -766,6 +774,17 @@ const App: React.FC = () => {
             currentSong={currentSong}
             isPlaying={playState === PlayState.PLAYING}
             accentColor={accentColor}
+          />
+        </Suspense>
+      )}
+
+      {/* Import Music Dialog - for welcome screen */}
+      {showImportDialog && (
+        <Suspense fallback={null}>
+          <LazyImportMusicDialog
+            isOpen={showImportDialog}
+            onClose={() => setShowImportDialog(false)}
+            onImport={handleImportUrl}
           />
         </Suspense>
       )}

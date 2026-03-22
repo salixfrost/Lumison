@@ -47,6 +47,7 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
       uniform vec3 iColor1;
       uniform vec3 iColor2;
       uniform vec3 iColor3;
+      uniform vec3 iColor4;
 
       float cosRange(float amt, float range, float minimum) {
         return (((1.0 + cos(radians(amt))) * 0.5) * range) + minimum;
@@ -56,7 +57,7 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
         const int zoom = 40;
         const float brightness = 0.975;
         
-        float time = iTime * 0.5;
+        float time = iTime * 0.12;
         vec2 fragCoord = gl_FragCoord.xy;
         vec2 uv = fragCoord.xy / iResolution.xy;
         vec2 p = (2.0 * fragCoord.xy - iResolution.xy) / max(iResolution.x, iResolution.y);
@@ -78,10 +79,11 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
         float colorMix1 = 0.5 * sin(3.0 * p.x) + 0.5;
         float colorMix2 = 0.5 * sin(3.0 * p.y) + 0.5;
         float colorMix3 = sin(p.x + p.y) * 0.5 + 0.5;
+        float colorMix4 = sin(p.x - p.y + 1.5) * 0.5 + 0.5;
         
         vec3 col = mix(
           mix(iColor1, iColor2, colorMix1),
-          iColor3,
+          mix(iColor3, iColor4, colorMix4),
           colorMix2 * colorMix3
         );
         
@@ -155,6 +157,7 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
     const iColor1Location = gl.getUniformLocation(program, 'iColor1');
     const iColor2Location = gl.getUniformLocation(program, 'iColor2');
     const iColor3Location = gl.getUniformLocation(program, 'iColor3');
+    const iColor4Location = gl.getUniformLocation(program, 'iColor4');
 
     // Parse colors from RGB strings
     const parseColor = (colorStr: string): [number, number, number] => {
@@ -169,9 +172,10 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
       return [0.5, 0.3, 0.7]; // Default purple
     };
 
-    const color1 = colors && colors[0] ? parseColor(colors[0]) : [0.5, 0.3, 0.7];
-    const color2 = colors && colors[1] ? parseColor(colors[1]) : [0.7, 0.3, 0.5];
-    const color3 = colors && colors[2] ? parseColor(colors[2]) : [0.3, 0.5, 0.7];
+    const color1 = colors && colors[0] ? parseColor(colors[0]) : [0.12, 0.08, 0.31]; // 深靛蓝
+    const color2 = colors && colors[1] ? parseColor(colors[1]) : [0.31, 0.08, 0.24]; // 暗紫
+    const color3 = colors && colors[2] ? parseColor(colors[2]) : [0.08, 0.20, 0.31]; // 深青
+    const color4 = colors && colors[3] ? parseColor(colors[3]) : [0.20, 0.08, 0.28]; // 深紫
 
     const resize = () => {
       if (!canvas) return;
@@ -208,6 +212,7 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
       gl.uniform3f(iColor1Location, color1[0], color1[1], color1[2]);
       gl.uniform3f(iColor2Location, color2[0], color2[1], color2[2]);
       gl.uniform3f(iColor3Location, color3[0], color3[1], color3[2]);
+      gl.uniform3f(iColor4Location, color4[0], color4[1], color4[2]);
 
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);

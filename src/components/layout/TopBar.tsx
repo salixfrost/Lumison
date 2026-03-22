@@ -1,12 +1,12 @@
 /// <reference types="vite/client" />
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { InfoIcon, FullscreenIcon, SettingsIcon, MinimizeIcon, CloseIcon } from "../common/Icons";
+import { InfoIcon, FullscreenIcon, SettingsIcon, MinimizeIcon, CloseIcon, FocusSessionIcon } from "../common/Icons";
 import AboutDialog from "../modals/AboutDialog";
 import ImportMusicDialog from "../modals/ImportMusicDialog";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
+import FocusSessionModal from "../modals/FocusSessionModal";
 import { useI18n } from "../../contexts/I18nContext";
 import { Window } from "@tauri-apps/api/window";
-import { UpdateService } from "../../services/updateService";
 
 interface TopBarProps {
   disabled?: boolean;
@@ -21,9 +21,13 @@ interface TopBarProps {
     artist: string;
     coverUrl?: string;
   } | null;
-  backgroundType: 'fluid' | 'shader1';
-  onBackgroundTypeChange: (type: 'fluid' | 'shader1') => void;
   isPlaying: boolean;
+  focusSession?: {
+    isActive: boolean;
+    remainingTime: number;
+    isPaused: boolean;
+  } | null;
+  onToggleFocusSession?: () => void;
 }
 
 // 常量提取到组件外部
@@ -43,21 +47,19 @@ const TopBar: React.FC<TopBarProps> = ({
   viewMode = 'default',
   onViewModeChange,
   currentSong,
-  backgroundType,
-  onBackgroundTypeChange,
   isPlaying,
+  focusSession,
+  onToggleFocusSession,
 }) => {
   const { t } = useI18n();
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showFocusSessionModal, setShowFocusSessionModal] = useState(false);
   const [isTopBarActive, setIsTopBarActive] = useState(false);
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settingsContainerRef = useRef<HTMLDivElement>(null);
-  const [showBackgroundToast, setShowBackgroundToast] = useState(false);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearHideTimer = useCallback(() => {
     if (hideTimeoutRef.current) {
@@ -165,6 +167,10 @@ const TopBar: React.FC<TopBarProps> = ({
     setIsSettingsOpen(false);
   }, []);
 
+  const handleToggleFocusSession = useCallback(() => {
+    setShowFocusSessionModal(true);
+  }, []);
+
   const handleCheckUpdate = useCallback(async () => {
     setIsCheckingUpdate(true);
     try {
@@ -224,33 +230,8 @@ const TopBar: React.FC<TopBarProps> = ({
       if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
       }
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
     };
   }, []);
-
-  // Handle background change with playing check
-  const handleBackgroundChange = useCallback((type: 'fluid' | 'shader1') => {
-    if (!isPlaying) {
-      // Show toast notification
-      setShowBackgroundToast(true);
-
-      // Clear existing timer
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-
-      // Hide after 2 seconds
-      toastTimerRef.current = setTimeout(() => {
-        setShowBackgroundToast(false);
-      }, 2000);
-
-      return;
-    }
-
-    onBackgroundTypeChange(type);
-  }, [isPlaying, onBackgroundTypeChange]);
 
   // 使用 useMemo 缓存样式类
   const transitionClasses = useMemo(() => {
@@ -309,6 +290,20 @@ const TopBar: React.FC<TopBarProps> = ({
 
         {/* Actions */}
         <div className={`flex gap-2 ${transitionClasses.base} delay-75 ${transitionClasses.mobileActive} ${transitionClasses.hoverSupport}`}>
+          {/* Focus Session Button */}
+          <button
+            onClick={handleToggleFocusSession}
+            className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${
+              showFocusSessionModal || focusSession?.isActive ? "text-white bg-white/20 scale-110" : "text-white/80"
+            }`}
+            title={t("focus.session") || "专注模式"}
+            aria-label={t("focus.session") || "专注模式"}
+          >
+            <FocusSessionIcon className={`w-5 h-5 transition-transform duration-500 ease-out ${
+              showFocusSessionModal || focusSession?.isActive ? 'scale-110' : ''
+            }`} />
+          </button>
+
           {/* Settings Button */}
           <div className="relative" ref={settingsContainerRef} onPointerDown={(e) => e.stopPropagation()}>
             <button
@@ -376,39 +371,6 @@ const TopBar: React.FC<TopBarProps> = ({
 
                   {/* Language Switcher */}
                   <LanguageSwitcher variant="settings" />
-
-                  <div className="h-px bg-white/10 my-1" />
-
-                  {/* Background Selector */}
-                  <div className="space-y-2">
-                    <label className="text-white/70 text-xs">{t("background.label") || "背景效果"}</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => handleBackgroundChange('fluid')}
-                        disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
-                          } ${backgroundType === 'fluid'
-                            ? 'bg-white/20 text-white shadow-lg'
-                            : 'bg-white/5 text-white/80'
-                          }`}
-                        aria-pressed={backgroundType === 'fluid'}
-                      >
-                        {t("background.fluid") || "流体"}
-                      </button>
-                      <button
-                        onClick={() => handleBackgroundChange('shader1')}
-                        disabled={!isPlaying}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out ${isPlaying ? 'hover:scale-105 active:scale-95' : 'opacity-50 cursor-not-allowed'
-                          } ${backgroundType === 'shader1'
-                            ? 'bg-white/20 text-white shadow-lg'
-                            : 'bg-white/5 text-white/80'
-                          }`}
-                        aria-pressed={backgroundType === 'shader1'}
-                      >
-                        {t("background.shader1") || "熔化"}
-                      </button>
-                    </div>
-                  </div>
 
                   <div className="h-px bg-white/10 my-1" />
 
@@ -485,17 +447,14 @@ const TopBar: React.FC<TopBarProps> = ({
         onClose={() => setIsImportDialogOpen(false)}
         onImport={onImportUrl}
       />
-
-      {/* Background Change Toast */}
-      {showBackgroundToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[70] animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="px-6 py-3 rounded-full bg-black/60 backdrop-blur-2xl border border-white/20 shadow-2xl">
-            <p className="text-white/90 text-sm font-medium">
-              {t("background.playMusicToChange") || "播放音乐后才能切换背景效果"}
-            </p>
-          </div>
-        </div>
-      )}
+      <FocusSessionModal
+        isOpen={showFocusSessionModal}
+        onClose={() => setShowFocusSessionModal(false)}
+        onSessionComplete={() => setShowFocusSessionModal(false)}
+        isActive={focusSession?.isActive}
+        remainingTime={focusSession?.remainingTime || 1500}
+        initialDuration={focusSession?.remainingTime || 1500}
+      />
     </div>
   );
 };

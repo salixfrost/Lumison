@@ -63,6 +63,20 @@ export default {
     disclaimer: "⚠️ This is NOT real Dolby Atmos. This is a simulated spatial enhancement system for immersive headphone listening.",
   },
 
+  // Focus Session
+  focus: {
+    session: "Focus Session",
+    duration: "Select Duration",
+    minutes: "min",
+    seconds: "sec",
+    start: "Start",
+    pause: "Pause",
+    resume: "Resume",
+    finish: "Finish",
+    custom: "Custom",
+    autoPause: "Auto-pause when done",
+  },
+
   // Player Controls
   player: {
     play: "Play",
@@ -80,6 +94,20 @@ export default {
     noMusicLoaded: "No Music Loaded",
     welcomeTitle: "Welcome to Lumison",
     selectSong: "Select a song",
+  },
+
+  // Focus Session
+  focus: {
+    session: "Focus Session",
+    duration: "Select Duration",
+    custom: "Custom",
+    minutes: "min",
+    seconds: "sec",
+    start: "Start",
+    pause: "Pause",
+    resume: "Resume",
+    finish: "Complete",
+    autoPause: "Auto-pause after completion",
   },
 
   // Speed Settings

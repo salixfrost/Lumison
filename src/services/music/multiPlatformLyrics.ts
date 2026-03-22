@@ -1,4 +1,5 @@
 import { fetchViaProxy } from "../utils";
+import { fetchNeteaseWithFallback } from "./neteaseRequest";
 
 /**
  * Multi-platform lyrics service.
@@ -38,72 +39,7 @@ const isSourceBlacklisted = (source: string): boolean => {
   return failedSources.has(source);
 };
 
-// API endpoint configuration
-const API_ENDPOINTS = {
-  // Netease API mirrors. Runtime scoring selects the fastest endpoint.
-  netease: [
-    // Preferred community mirrors
-    "https://163api.qijieya.cn",
-    "https://netease-cloud-music-api-psi-ten.vercel.app",
-    "https://music-api.heheda.top",
-    "https://netease-api.fe-mm.com",
-
-    // Fallback aggregators
-    "https://api.no0a.cn/api/cloudmusic",
-    "https://api.injahow.cn/netease",
-    "https://api.uomg.com/api/rand.music",
-
-    // Additional mirrors
-    "https://netease-music-api.vercel.app",
-    "https://music.ghxi.com",
-    "https://api.mlwei.com/music",
-  ],
-};
-
-// Performance stats for Netease mirrors
-const neteaseApiStats = API_ENDPOINTS.netease.map(url => ({
-  url,
-  responseTimes: [] as number[],
-  failCount: 0,
-}));
-
-/**
- * Pick the fastest Netease API mirror based on rolling response stats.
- */
-const getFastestNeteaseApi = (): string => {
-  // Compute average response time and penalize failures.
-  const sorted = [...neteaseApiStats].sort((a, b) => {
-    const avgA = a.responseTimes.length > 0
-      ? a.responseTimes.reduce((sum, t) => sum + t, 0) / a.responseTimes.length
-      : Infinity;
-    const avgB = b.responseTimes.length > 0
-      ? b.responseTimes.reduce((sum, t) => sum + t, 0) / b.responseTimes.length
-      : Infinity;
-
-    // Failure count is also included in ranking.
-    return (avgA + a.failCount * 1000) - (avgB + b.failCount * 1000);
-  });
-
-  return sorted[0].url;
-};
-
-/**
- * Record runtime performance for a Netease API mirror.
- */
-const recordNeteaseApiPerformance = (url: string, responseTime: number, success: boolean) => {
-  const stat = neteaseApiStats.find(s => s.url === url);
-  if (!stat) return;
-
-  if (success) {
-    stat.responseTimes.push(responseTime);
-    // Keep only the latest 10 samples.
-    if (stat.responseTimes.length > 10) {
-      stat.responseTimes.shift();
-    }
-  } else {
-    stat.failCount++;
-  }
-};
+// API endpoint configuration is centralized in neteaseRequest.ts
 
 interface LyricsResult {
   lrc: string;
@@ -156,21 +92,15 @@ const parseMusixmatchSubtitleBody = (subtitleBody: string): string | null => {
 };
 
 /**
- * Search Netease using the currently fastest mirror.
+ * Search Netease using the centralized request handler.
  */
 const searchNeteaseMusic = async (keyword: string): Promise<any> => {
-  const apiUrl = getFastestNeteaseApi();
-  const startTime = Date.now();
-
   try {
-    const url = `${apiUrl}/cloudsearch?keywords=${encodeURIComponent(keyword)}&limit=5`;
-    const response = await fetchViaProxy(url);
-    const responseTime = Date.now() - startTime;
-
-    recordNeteaseApiPerformance(apiUrl, responseTime, true);
+    const response = await fetchNeteaseWithFallback(
+      `/cloudsearch?keywords=${encodeURIComponent(keyword)}&limit=5`
+    );
     return response?.result?.songs?.[0];
   } catch (error) {
-    recordNeteaseApiPerformance(apiUrl, 0, false);
     console.warn("Netease Music search failed:", error);
     return null;
   }
@@ -180,20 +110,11 @@ const searchNeteaseMusic = async (keyword: string): Promise<any> => {
  * Fetch lyrics and cover from Netease.
  */
 const fetchNeteaseMusicLyrics = async (songId: string, coverUrl?: string): Promise<LyricsResult | null> => {
-  const apiUrl = getFastestNeteaseApi();
   const startTime = Date.now();
-
   try {
-    const url = `${apiUrl}/lyric/new?id=${songId}`;
-    const response = await fetchViaProxy(url);
+    const response = await fetchNeteaseWithFallback(`/lyric/new?id=${songId}`);
 
-    if (!response?.lrc?.lyric) {
-      recordNeteaseApiPerformance(apiUrl, 0, false);
-      return null;
-    }
-
-    const responseTime = Date.now() - startTime;
-    recordNeteaseApiPerformance(apiUrl, responseTime, true);
+    if (!response?.lrc?.lyric) return null;
 
     return {
       lrc: response.lrc.lyric,
@@ -202,10 +123,9 @@ const fetchNeteaseMusicLyrics = async (songId: string, coverUrl?: string): Promi
       metadata: [],
       source: "netease",
       coverUrl,
-      responseTime,
+      responseTime: Date.now() - startTime,
     };
   } catch (error) {
-    recordNeteaseApiPerformance(apiUrl, 0, false);
     console.warn("Netease Music lyrics fetch failed:", error);
     return null;
   }

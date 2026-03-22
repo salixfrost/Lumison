@@ -1,37 +1,14 @@
-import { fetchViaProxy } from "../utils";
 import { searchAndFetchLyrics as multiPlatformSearch } from "./multiPlatformLyrics";
+import {
+  getPlaylistDetail,
+  getSongDetail,
+  searchSongs as searchNeteaseSongs,
+  type NeteaseTrack,
+} from "./neteaseApi";
+import { fetchNeteaseWithFallback } from "./neteaseRequest";
 
-const LYRIC_API_BASE = "https://163api.qijieya.cn";
 const METING_API = "https://api.qijieya.cn/meting/";
-const NETEASE_SEARCH_API = "https://163api.qijieya.cn/cloudsearch";
-const NETEASE_API_BASE = "http://music.163.com/api";
-const NETEASECLOUD_API_BASE = "https://163api.qijieya.cn";
-
-// Backup API endpoints
-const BACKUP_APIS = [
-  "https://163api.qijieya.cn",
-  "https://netease-cloud-music-api-psi-ten.vercel.app",
-  "https://music-api.heheda.top",
-];
-
-// Fetch with fallback to backup APIs
-const fetchWithFallback = async (endpoint: string): Promise<any> => {
-  const apis = [NETEASECLOUD_API_BASE, ...BACKUP_APIS.filter(api => api !== NETEASECLOUD_API_BASE)];
-
-  for (const baseUrl of apis) {
-    try {
-      const url = endpoint.replace(NETEASECLOUD_API_BASE, baseUrl);
-      // console.log(`Trying API: ${url}`);
-      const result = await fetchViaProxy(url);
-      return result;
-    } catch (error) {
-      console.warn(`API ${baseUrl} failed:`, error);
-      continue;
-    }
-  }
-
-  throw new Error("All API endpoints failed");
-};
+const fetchWithFallback = fetchNeteaseWithFallback;
 
 const METADATA_KEYWORDS = [
   "歌词贡献者",
@@ -77,21 +54,6 @@ interface NeteaseApiSong {
   dt?: number;
 }
 
-interface NeteaseSearchResponse {
-  result?: {
-    songs?: NeteaseApiSong[];
-  };
-}
-
-interface NeteasePlaylistResponse {
-  songs?: NeteaseApiSong[];
-}
-
-interface NeteaseSongDetailResponse {
-  code?: number;
-  songs?: NeteaseApiSong[];
-}
-
 export interface NeteaseTrackInfo {
   id: string;
   title: string;
@@ -123,6 +85,17 @@ const mapNeteaseSongToTrack = (song: NeteaseApiSong): NeteaseTrackInfo => ({
   duration: song.dt,
   isNetease: true,
   neteaseId: song.id.toString(),
+});
+
+const mapNeteaseApiTrackToSong = (track: NeteaseTrack): NeteaseApiSong => ({
+  id: track.id,
+  name: track.name,
+  ar: track.artists,
+  al: {
+    name: track.album?.name,
+    picUrl: track.album?.picUrl,
+  },
+  dt: track.duration,
 });
 
 const isMetadataTimestampLine = (line: string): boolean => {
@@ -199,22 +172,41 @@ export const searchNetEase = async (
   options: SearchOptions = {},
 ): Promise<NeteaseTrackInfo[]> => {
   const { limit = 20, offset = 0 } = options;
-  const searchApiUrl = `${NETEASE_SEARCH_API}?keywords=${encodeURIComponent(
-    keyword,
-  )}&limit=${limit}&offset=${offset}`;
 
   try {
-    const parsedSearchApiResponse = (await fetchWithFallback(
-      searchApiUrl,
-    )) as NeteaseSearchResponse;
-    const songs = parsedSearchApiResponse.result?.songs ?? [];
+    const { songs } = await searchNeteaseSongs(
+      keyword,
+      { limit, offset },
+      { timeout: 5000, retries: 0 },
+    );
 
     if (songs.length === 0) {
       console.warn(`No search results for: ${keyword}`);
       return [];
     }
 
-    return songs.map(mapNeteaseSongToTrack);
+    const tracks = songs.map((song) => mapNeteaseSongToTrack(mapNeteaseApiTrackToSong(song)));
+
+    // Enrich missing cover URLs via /song/detail in the background
+    const missingCoverIds = tracks
+      .filter((t) => !t.coverUrl)
+      .map((t) => Number(t.neteaseId));
+
+    if (missingCoverIds.length > 0) {
+      getSongDetail(missingCoverIds)
+        .then((details) => {
+          const coverMap = new Map(
+            details.map((d) => [d.id, d.album?.picUrl?.replaceAll("http:", "https:")])
+          );
+          tracks.forEach((t) => {
+            const url = coverMap.get(Number(t.neteaseId));
+            if (url) t.coverUrl = url;
+          });
+        })
+        .catch(() => { /* non-critical */ });
+    }
+
+    return tracks;
   } catch (error) {
     console.error("NetEase search error", error);
     return [];
@@ -225,33 +217,8 @@ export const fetchNeteasePlaylist = async (
   playlistId: string,
 ): Promise<NeteaseTrackInfo[]> => {
   try {
-    // Fetch all playlist tracks through paginated API calls.
-    const allTracks: NeteaseTrackInfo[] = [];
-    const limit = 50;
-    let offset = 0;
-    let shouldContinue = true;
-
-    while (shouldContinue) {
-      const url = `${NETEASECLOUD_API_BASE}/playlist/track/all?id=${playlistId}&limit=${limit}&offset=${offset}`;
-      const data = (await fetchWithFallback(url)) as NeteasePlaylistResponse;
-      const songs = data.songs ?? [];
-      if (songs.length === 0) {
-        break;
-      }
-
-      const tracks = songs.map(mapNeteaseSongToTrack);
-
-      allTracks.push(...tracks);
-
-      // Continue fetching if the current page was full
-      if (songs.length < limit) {
-        shouldContinue = false;
-      } else {
-        offset += limit;
-      }
-    }
-
-    return allTracks;
+    const { tracks } = await getPlaylistDetail(Number(playlistId));
+    return tracks.map((song) => mapNeteaseSongToTrack(mapNeteaseApiTrackToSong(song)));
   } catch (e) {
     console.error("Playlist fetch error", e);
     return [];
@@ -262,13 +229,10 @@ export const fetchNeteaseSong = async (
   songId: string,
 ): Promise<NeteaseTrackInfo | null> => {
   try {
-    const url = `${NETEASECLOUD_API_BASE}/song/detail?ids=${songId}`;
-    const data = (await fetchWithFallback(
-      url,
-    )) as NeteaseSongDetailResponse;
-    const track = data.songs?.[0];
-    if (data.code === 200 && track) {
-      return mapNeteaseSongToTrack(track);
+    const tracks = await getSongDetail(Number(songId));
+    const track = tracks[0];
+    if (track) {
+      return mapNeteaseSongToTrack(mapNeteaseApiTrackToSong(track));
     }
     return null;
   } catch (e) {
@@ -328,7 +292,7 @@ export const fetchLyricsById = async (
 ): Promise<{ lrc: string; yrc?: string; tLrc?: string; metadata: string[] } | null> => {
   try {
     // Fetch lyrics by song ID from the Netease lyrics endpoint.
-    const lyricUrl = `${NETEASECLOUD_API_BASE}/lyric/new?id=${songId}`;
+    const lyricUrl = `/lyric/new?id=${songId}`;
     const lyricData = await fetchWithFallback(lyricUrl);
 
     const rawYrc = lyricData.yrc?.lyric;

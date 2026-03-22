@@ -376,18 +376,18 @@ const Controls: React.FC<ControlsProps> = ({
       {/* Spectrum Visualizer - Moved to bottom */}
 
       {/* Progress Bar */}
-      <div className="w-full max-w-[520px] flex items-center gap-3 text-sm font-medium theme-text-secondary group/bar relative">
+      <div className="w-full max-w-[780px] flex items-center gap-3 text-sm font-medium theme-text-secondary group/bar relative">
         <span className="w-12 text-right font-mono tracking-wide">
           {formatTime(displayTime)}
         </span>
 
         <div className="relative flex-1 h-10 flex items-center cursor-pointer group">
           {/* Background Track */}
-          <div className="absolute inset-x-0 h-1 theme-bg-overlay rounded-full group-hover:h-1.5 transition-[height] duration-200 ease-out"></div>
+          <div className="absolute inset-x-0 h-1.5 theme-bg-overlay rounded-full group-hover:h-2 transition-[height] duration-200 ease-out"></div>
 
           {/* Buffer Progress */}
           <div
-            className="absolute left-0 h-1 rounded-full group-hover:h-1.5 transition-[height] duration-200 ease-out"
+            className="absolute left-0 h-1.5 rounded-full group-hover:h-2 transition-[height] duration-200 ease-out"
             style={{
               width: bufferedWidthPercent + "%",
               backgroundColor: theme === 'light' ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)",
@@ -397,19 +397,11 @@ const Controls: React.FC<ControlsProps> = ({
 
           {/* Active Progress */}
           <div
-            className="absolute left-0 h-1 rounded-full group-hover:h-1.5 transition-[height] duration-200 ease-out"
+            className="absolute left-0 h-1.5 rounded-full group-hover:h-2 transition-[height] duration-200 ease-out"
             style={{
               width: `${progressPercent}%`,
               backgroundColor: theme === 'light' ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)",
               transition: 'background-color 1.2s cubic-bezier(0.25, 0.1, 0.25, 1), height 0.2s ease-out',
-            }}
-          ></div>
-
-          {/* Minimal white thumb */}
-          <div
-            className="absolute top-1/2 z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_2px_rgba(0,0,0,0.12)]"
-            style={{
-              left: `${progressPercent}%`,
             }}
           ></div>
 

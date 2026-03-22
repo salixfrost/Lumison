@@ -176,7 +176,7 @@ export const useSearchModal = ({
       } else {
         performArchiveSearch();
       }
-    }, 500);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [

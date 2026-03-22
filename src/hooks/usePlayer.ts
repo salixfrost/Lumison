@@ -71,8 +71,7 @@ export const usePlayer = ({
   const [duration, setDuration] = useState(0);
   const [playMode, setPlayMode] = useState<PlayMode>(PlayMode.LOOP_ALL);
   const [matchStatus, setMatchStatus] = useState<MatchStatus>("idle");
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const isSeekingRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement>(null);  const isSeekingRef = useRef(false);
   const originalQueueIndexMap = useMemo(
     () => buildSongIdIndexMap(originalQueue),
     [originalQueue],
@@ -550,23 +549,6 @@ export const usePlayer = ({
     };
   }, [audioRef, currentSong]);
 
-  // Provide high-precision time updates directly from the native audio element
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleNativeTimeUpdate = () => {
-      if (isSeekingRef.current) return;
-      const value = audio.currentTime;
-      setCurrentTime(Number.isFinite(value) ? value : 0);
-    };
-
-    audio.addEventListener("timeupdate", handleNativeTimeUpdate);
-    return () => {
-      audio.removeEventListener("timeupdate", handleNativeTimeUpdate);
-    };
-  }, [audioRef]);
-
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -589,7 +571,7 @@ export const usePlayer = ({
 
     // 强制重新提取颜色以应用新的3色方案
     // 检查是否已经是3色方案（新方案）
-    const hasOldColorScheme = currentSong.colors && currentSong.colors.length !== 3;
+    const hasOldColorScheme = currentSong.colors && currentSong.colors.length !== 4;
     const needsExtraction = !currentSong.colors || hasOldColorScheme;
 
     if (needsExtraction) {
@@ -839,8 +821,8 @@ export const usePlayer = ({
     handleAudioEnded,
     setSpeed: handleSetSpeed,
     togglePreservesPitch: handleTogglePreservesPitch,
-    pitch: 0, // Default pitch
-    setPitch: (pitch: number) => { }, // Placeholder
+    pitch: 0,
+    setPitch: (_pitch: number) => { }, // Pitch adjustment requires Web Audio API integration; not yet implemented
     play,
     pause,
     resolvedAudioSrc,

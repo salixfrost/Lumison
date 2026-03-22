@@ -19,62 +19,64 @@ export const shuffleArray = <T>(array: T[]): T[] => {
   return newArr;
 };
 
+// Track which base URLs have confirmed CORS support to skip the proxy on subsequent calls
+const corsWorkingCache = new Set<string>();
+
 // Helper to request via CORS proxy (api.allorigins.win is reliable for GET requests)
-// Try direct request first, fallback to proxy if CORS fails
+// Tries direct request and proxy in parallel; uses whichever responds first.
 export const fetchViaProxy = async (
   targetUrl: string,
   options?: { signal?: AbortSignal }
 ): Promise<any> => {
-  // 1. Try direct request first
-  try {
+  // Extract base URL to check cache
+  const baseUrl = (() => { try { const u = new URL(targetUrl); return u.origin; } catch { return targetUrl; } })();
+
+  // If we know this origin works directly, skip the race and go direct
+  if (corsWorkingCache.has(baseUrl)) {
     const response = await fetch(targetUrl, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers: { 'Accept': 'application/json' },
       mode: 'cors',
       signal: options?.signal,
     });
-    if (!response.ok) {
-      throw new Error(
-        `Direct fetch failed with status: ${response.status}`,
-      );
-    }
-    const text = await response.text();
-    return JSON.parse(text);
-  } catch (directError) {
-    // 如果是 AbortError，直接抛出
-    if (directError instanceof Error && directError.name === 'AbortError') {
-      throw directError;
-    }
-
-    // 2. Direct request failed (likely CORS), try single reliable proxy
-    console.log("Direct fetch failed (likely CORS), trying proxy:", directError);
-
-    try {
-      // 使用最可靠的代理服务
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-      const response = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        signal: options?.signal,
-      });
-      if (!response.ok) {
-        throw new Error(`Proxy fetch failed with status: ${response.status}`);
-      }
-      const text = await response.text();
-      return JSON.parse(text);
-    } catch (proxyError) {
-      // 如果是 AbortError，直接抛出
-      if (proxyError instanceof Error && proxyError.name === 'AbortError') {
-        throw proxyError;
-      }
-      console.warn(`Proxy failed:`, proxyError);
-      throw new Error("All proxy requests failed");
-    }
+    if (!response.ok) throw new Error(`Direct fetch failed: ${response.status}`);
+    return JSON.parse(await response.text());
   }
+
+  // Race direct request vs proxy — use whichever wins
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+  const tryDirect = fetch(targetUrl, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    mode: 'cors',
+    signal: options?.signal,
+  }).then(async (r) => {
+    if (!r.ok) throw new Error(`Direct fetch failed: ${r.status}`);
+    const data = JSON.parse(await r.text());
+    corsWorkingCache.add(baseUrl); // remember this origin works directly
+    return data;
+  });
+
+  const tryProxy = fetch(proxyUrl, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    signal: options?.signal,
+  }).then(async (r) => {
+    if (!r.ok) throw new Error(`Proxy fetch failed: ${r.status}`);
+    return JSON.parse(await r.text());
+  });
+
+  // any() — resolve with first success, reject only if both fail
+  return new Promise((resolve, reject) => {
+    let failures = 0;
+    const onFail = (err: unknown) => {
+      if (err instanceof Error && err.name === 'AbortError') { reject(err); return; }
+      if (++failures === 2) reject(new Error('All fetch attempts failed'));
+    };
+    tryDirect.then(resolve).catch(onFail);
+    tryProxy.then(resolve).catch(onFail);
+  });
 };
 
 export const parseNeteaseLink = (
@@ -153,11 +155,11 @@ export const extractColors = async (imageSrc: string): Promise<string[]> => {
     // 按分数排序
     scoredColors.sort((a, b) => b.score - a.score);
 
-    // 选择前3个颜色，但确保它们有一定的差异性
+    // 选择前4个颜色，但确保它们有一定的差异性
     const selectedColors: number[][] = [];
 
     for (const color of scoredColors) {
-      if (selectedColors.length >= 3) break;
+      if (selectedColors.length >= 4) break;
 
       // 检查与已选颜色的差异
       const isDifferent = selectedColors.every(selected => {
@@ -173,7 +175,7 @@ export const extractColors = async (imageSrc: string): Promise<string[]> => {
     }
 
     // 如果没有足够的颜色，用评分最高的填充
-    while (selectedColors.length < 3 && scoredColors.length > 0) {
+    while (selectedColors.length < 4 && scoredColors.length > 0) {
       const nextColor = scoredColors[selectedColors.length];
       if (nextColor) {
         selectedColors.push(nextColor.rgb);

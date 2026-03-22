@@ -1,32 +1,15 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { PlayMode } from '../types';
+
+interface FocusSession {
+  isActive: boolean;
+  remainingTime: number;
+  isPaused: boolean;
+}
 
 interface PlayerContextValue {
-  // Playback state
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  isBuffering: boolean;
-  
-  // Volume
-  volume: number;
-  setVolume: (volume: number) => void;
-  
-  // Speed
-  speed: number;
-  preservesPitch: boolean;
-  setSpeed: (speed: number) => void;
-  togglePreservesPitch: () => void;
-  
-  // Play mode
-  playMode: PlayMode;
-  togglePlayMode: () => void;
-  
-  // UI state
-  showVolumePopup: boolean;
-  setShowVolumePopup: (show: boolean) => void;
-  showSettingsPopup: boolean;
-  setShowSettingsPopup: (show: boolean) => void;
+  focusSession: FocusSession | null;
+  setFocusSession: (session: FocusSession | null) => void;
+  completeFocusSession: (shouldPause?: boolean) => void;
 }
 
 const PlayerContext = createContext<PlayerContextValue | undefined>(undefined);
@@ -41,9 +24,19 @@ export const usePlayerContext = () => {
 
 interface PlayerProviderProps {
   children: ReactNode;
-  value: PlayerContextValue;
 }
 
-export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children, value }) => {
-  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
+export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
+  const [focusSession, setFocusSession] = useState<FocusSession | null>(null);
+
+  const completeFocusSession = useCallback((shouldPause?: boolean) => {
+    setFocusSession(null);
+    // shouldPause is handled by FocusSessionModal directly via onSessionComplete
+  }, []);
+
+  return (
+    <PlayerContext.Provider value={{ focusSession, setFocusSession, completeFocusSession }}>
+      {children}
+    </PlayerContext.Provider>
+  );
 };
