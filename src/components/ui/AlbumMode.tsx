@@ -3,6 +3,7 @@ import SmartImage from '../common/SmartImage';
 import { useI18n } from '../../contexts/I18nContext';
 import { formatTime } from '../../services/utils';
 import { LyricLine as LyricLineType } from '../../types';
+import { findActiveLyricLineIndex, findActiveLyricWordIndex } from '../../utils/lyricsLookup';
 import './AlbumMode.css';
 
 interface AlbumModeProps {
@@ -38,31 +39,17 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
   const displayCover = coverUrl;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  // Find current lyric line
+  // Find current lyric line (using binary search)
   const currentLyricIndex = useMemo(() => {
     if (!lyrics || lyrics.length === 0) return -1;
-
-    for (let i = lyrics.length - 1; i >= 0; i--) {
-      if (currentTime >= lyrics[i].time) {
-        return i;
-      }
-    }
-    return -1;
+    return findActiveLyricLineIndex(lyrics, currentTime);
   }, [lyrics, currentTime]);
 
-  // Find current word in active line
+  // Find current word in active line (using binary search)
   const getCurrentWordIndex = useCallback((lineIndex: number) => {
     if (lineIndex < 0 || !lyrics[lineIndex]?.words) return -1;
-
-    const line = lyrics[lineIndex];
-    const words = line.words || [];
-
-    for (let i = words.length - 1; i >= 0; i--) {
-      if (currentTime >= words[i].startTime) {
-        return i;
-      }
-    }
-    return -1;
+    const words = lyrics[lineIndex].words || [];
+    return findActiveLyricWordIndex(words, currentTime);
   }, [lyrics, currentTime]);
 
   // Auto-scroll lyrics
