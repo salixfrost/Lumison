@@ -81,6 +81,20 @@ const CoverCard: React.FC<CoverCardProps> = ({
 
         {/* More */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {onTogglePlaylist && (
+            <button
+              onClick={onTogglePlaylist}
+              className={`p-2 rounded-full backdrop-blur-md transition-all duration-200 ${showPlaylistPopup
+                ? theme === 'light' ? 'bg-black/10 text-black' : 'bg-white/10 text-white'
+                : theme === 'light' ? 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+                }`}
+              title={t("playlist.title") || "Playlist"}
+              aria-label={t("playlist.title") || "Playlist"}
+            >
+              <QueueIcon className="w-5 h-5" />
+            </button>
+          )}
+
           {setShowSettingsPopup && (
             <div className="relative" ref={settingsContainerRef}>
               <button

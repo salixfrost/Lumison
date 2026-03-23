@@ -20,6 +20,7 @@ import {
   WaveformIcon,
   ReverbIcon,
   SpatialAudioIcon,
+  QueueIcon,
 } from "../common/Icons";
 import { PlayMode } from "../../types";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -361,6 +362,7 @@ const Controls: React.FC<ControlsProps> = ({
         title={title}
         artist={artist}
         album={album}
+        onTogglePlaylist={onTogglePlaylist}
         settingsPopupContent={
           settingsTransitions((style, item) =>
             item ? (
