@@ -11,6 +11,43 @@ interface FlowingLayer {
 
 const defaultColors = ["#8b5cf6", "#ec4899", "#f97316", "#3b82f6"];
 
+// Canvas pool configuration for memory management
+const MAX_POOL_SIZE = 8;
+const canvasPool: HTMLCanvasElement[] = [];
+
+// Acquire a canvas from the pool or create a new one
+const acquireCanvas = (): HTMLCanvasElement => {
+  if (canvasPool.length > 0) {
+    const canvas = canvasPool.pop()!;
+    // Clear the canvas before reuse
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    return canvas;
+  }
+  return document.createElement("canvas");
+};
+
+// Release a canvas back to the pool for reuse
+const releaseCanvas = (canvas: HTMLCanvasElement | null): void => {
+  if (!canvas) return;
+  if (canvasPool.length < MAX_POOL_SIZE) {
+    // Clear the canvas before returning to pool
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    canvasPool.push(canvas);
+  }
+  // If pool is full, canvas will be garbage collected
+};
+
+// Cleanup all pooled canvases (useful for memory pressure situations)
+export const cleanupCanvasPool = (): void => {
+  canvasPool.length = 0;
+};
+
 const MESH_FLOATS = [
   -0.2351, -0.0967, 0.2135, -0.1414, 0.9221, -0.0908, 0.9221, -0.0685, 1.3027,
   0.0253, 1.2351, 0.1786, -0.3768, 0.1851, 0.2, 0.2, 0.6615, 0.3146, 0.9543,
@@ -25,11 +62,14 @@ const scaleCanvas = (
   newWidth: number,
   newHeight: number,
 ): HTMLCanvasElement => {
-  const canvas = document.createElement("canvas");
+  const canvas = acquireCanvas();
   canvas.width = newWidth;
   canvas.height = newHeight;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return source;
+  if (!ctx) {
+    releaseCanvas(canvas);
+    return source;
+  }
 
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
@@ -38,11 +78,14 @@ const scaleCanvas = (
 };
 
 const blurCanvas = (source: HTMLCanvasElement, radius: number) => {
-  const canvas = document.createElement("canvas");
+  const canvas = acquireCanvas();
   canvas.width = source.width;
   canvas.height = source.height;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return source;
+  if (!ctx) {
+    releaseCanvas(canvas);
+    return source;
+  }
 
   ctx.filter = `blur(${radius}px)`;
   ctx.drawImage(source, 0, 0);

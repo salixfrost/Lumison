@@ -15,7 +15,7 @@ export class UIBackgroundRender extends BaseBackgroundRender {
   constructor(
     canvas: HTMLCanvasElement,
     renderCallback: UIRenderCallback,
-    targetFps: number = 60,
+    targetFps: number = 30, // Default to 30fps for background effects
   ) {
     super(targetFps);
     this.canvas = canvas;
@@ -59,6 +59,8 @@ export class UIBackgroundRender extends BaseBackgroundRender {
       window.cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
+    // Clean up visibility listener
+    this.cleanup();
   }
 
   resize(width?: number, height?: number) {

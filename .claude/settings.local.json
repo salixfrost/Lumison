@@ -13,7 +13,26 @@
       "Bash(cargo check:*)",
       "Bash(:)",
       "Bash(tasklist)",
-      "Bash(findstr cargo:*)"
+      "Bash(findstr cargo:*)",
+      "Bash(.github/copilot-instructions.md' not:*)",
+      "Bash(cat scripts/*.js)",
+      "Bash(cat src/config/*.ts)",
+      "Bash(cat src/utils/*.ts)",
+      "Bash(jq -r \".scripts // {} | to_entries[] | \"\"\\\\\\(.key\\): \\\\\\(.value\\)\"\"\")",
+      "Bash(find /d/Project/Web/Lumison/src -type f -name *.ts -o -name *.tsx)",
+      "Bash(wc:*)",
+      "WebSearch",
+      "Bash(.)",
+      "Bash(.\\\\src\\\\components\\\\layout\\\\Background\\\\renderer\\\\BaseBackgroundRender.ts)",
+      "Bash(.\\\\src\\\\components\\\\layout\\\\FluidBackground.tsx)",
+      "Bash(.\\\\src\\\\components\\\\layout\\\\ShaderBackground.tsx)",
+      "Bash(.\\\\src\\\\components\\\\layout)",
+      "Bash(claude task:*)",
+      "Skill(update-config)",
+      "Bash(npm run:*)",
+      "Bash(D:/Project/Web/Lumison/src/components/layout/Background/mobile/index.ts)",
+      "Bash(D:/Project/Web/Lumison)",
+      "Bash(git add:*)"
     ]
   }
 }

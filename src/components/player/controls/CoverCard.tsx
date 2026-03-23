@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import SmartImage from '../../common/SmartImage';
 import { useI18n } from '../../../contexts/I18nContext';
-import { MoreVerticalIcon } from '../../common/Icons';
+import { MoreVerticalIcon, QueueIcon } from '../../common/Icons';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 interface CoverCardProps {
@@ -14,6 +14,8 @@ interface CoverCardProps {
   title?: string;
   artist?: string;
   album?: string;
+  onTogglePlaylist?: () => void;
+  showPlaylistPopup?: boolean;
 }
 
 const CoverCard: React.FC<CoverCardProps> = ({
@@ -25,6 +27,8 @@ const CoverCard: React.FC<CoverCardProps> = ({
   title = '',
   artist = '',
   album,
+  onTogglePlaylist,
+  showPlaylistPopup = false,
 }) => {
   const { t } = useI18n();
   const { theme } = useTheme();

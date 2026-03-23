@@ -3,10 +3,18 @@ export abstract class BaseBackgroundRender {
   private frameInterval: number;
   protected lastRenderTime = 0;
   protected isPaused = false;
+  protected isVisible = true;
+  private visibilityHandler: () => void;
 
   constructor(targetFps: number = 60) {
     this.targetFps = targetFps;
     this.frameInterval = 1000 / targetFps;
+    
+    // Visibility change handler
+    this.visibilityHandler = () => {
+      this.isVisible = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   setTargetFps(fps: number) {
@@ -19,6 +27,11 @@ export abstract class BaseBackgroundRender {
   }
 
   protected shouldRender(now: number) {
+    // Skip rendering when tab is hidden to save CPU/GPU
+    if (!this.isVisible) {
+      return false;
+    }
+    
     if (this.lastRenderTime === 0) {
       this.lastRenderTime = now;
       return true;
@@ -35,6 +48,10 @@ export abstract class BaseBackgroundRender {
 
   protected resetClock(startTime: number) {
     this.lastRenderTime = startTime;
+  }
+  
+  protected cleanup() {
+    document.removeEventListener('visibilitychange', this.visibilityHandler);
   }
 
   abstract start(colors?: string[]): void;

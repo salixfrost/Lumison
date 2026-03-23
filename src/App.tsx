@@ -604,6 +604,9 @@ const App: React.FC = () => {
             setShowVolumePopup={setShowVolumePopup}
             showSettingsPopup={showSettingsPopup}
             setShowSettingsPopup={setShowSettingsPopup}
+            onImportFiles={handleFileChange}
+            onImportUrl={handleImportUrl}
+            onOpenImportDialog={() => setShowImportDialog(true)}
           />
 
           {/* Floating Playlist Panel */}

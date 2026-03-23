@@ -56,6 +56,9 @@ interface ControlsProps {
   showSettingsPopup: boolean;
   setShowSettingsPopup: (show: boolean) => void;
   isBuffering: boolean;
+  onImportFiles?: (files: FileList) => void;
+  onImportUrl?: (url: string) => Promise<boolean>;
+  onOpenImportDialog?: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -86,6 +89,9 @@ const Controls: React.FC<ControlsProps> = ({
   showSettingsPopup,
   setShowSettingsPopup,
   isBuffering,
+  onImportFiles,
+  onImportUrl,
+  onOpenImportDialog,
 }) => {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -367,6 +373,9 @@ const Controls: React.FC<ControlsProps> = ({
                 volume={volume}
                 onVolumeChange={onVolumeChange}
                 getVolumeButtonIcon={getVolumeButtonIcon}
+                onImportFiles={onImportFiles}
+                onImportUrl={onImportUrl}
+                onOpenImportDialog={onOpenImportDialog}
               />
             ) : null
           )
@@ -542,6 +551,9 @@ interface SettingsPopupProps {
   volume: number;
   onVolumeChange: (volume: number) => void;
   getVolumeButtonIcon: () => React.ReactNode;
+  onImportFiles?: (files: FileList) => void;
+  onImportUrl?: (url: string) => Promise<boolean>;
+  onOpenImportDialog?: () => void;
 }
 
 const SettingsPopup: React.FC<SettingsPopupProps> = ({
@@ -553,9 +565,13 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
   volume,
   onVolumeChange,
   getVolumeButtonIcon,
+  onImportFiles,
+  onImportUrl,
+  onOpenImportDialog,
 }) => {
   const { t } = useI18n();
   const { theme } = useTheme();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Quick speed presets
   const speedPresets = [0.5, 0.75, 1, 1.25, 1.5, 2];
@@ -647,6 +663,45 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
           />
         </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 ease-out active:scale-90 hover:bg-white/10 active:bg-white/20 ${theme === 'light' ? 'text-black/70 hover:text-black' : 'text-white/70 hover:text-white'}`}
+            title={t("playlist.importLocal")}
+            aria-label={t("playlist.importLocal")}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => onOpenImportDialog?.()}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 ease-out active:scale-90 hover:bg-white/10 active:bg-white/20 ${theme === 'light' ? 'text-black/70 hover:text-black' : 'text-white/70 hover:text-white'}`}
+            title={t("playlist.importUrl")}
+            aria-label={t("playlist.importUrl")}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.101-1.102" />
+            </svg>
+          </button>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="audio/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files && e.target.files.length > 0 && onImportFiles) {
+              onImportFiles(e.target.files);
+              e.target.value = '';
+            }
+          }}
+        />
       </div>
     </animated.div>
   );

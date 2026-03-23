@@ -13,6 +13,7 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
   const animationFrameRef = useRef<number | undefined>(undefined);
   const pausedTimeRef = useRef<number>(0);
   const totalPausedDurationRef = useRef<number>(0);
+  const isVisibleRef = useRef<boolean>(true);
 
   // Memoize colors to prevent unnecessary re-renders
   const colorKey = useMemo(() => {
@@ -29,6 +30,12 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
       return;
     }
     glRef.current = gl;
+
+    // Visibility change handler
+    const handleVisibilityChange = () => {
+      isVisibleRef.current = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Vertex shader
     const vertexShaderSource = `
@@ -56,17 +63,17 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
       void main() {
         const int zoom = 40;
         const float brightness = 0.975;
-        
-        float time = iTime * 0.12;
+
+        float time = iTime * 0.05;
         vec2 fragCoord = gl_FragCoord.xy;
         vec2 uv = fragCoord.xy / iResolution.xy;
         vec2 p = (2.0 * fragCoord.xy - iResolution.xy) / max(iResolution.x, iResolution.y);
-        
+
         float ct = cosRange(time * 5.0, 3.0, 1.1);
         float xBoost = cosRange(time * 0.2, 5.0, 5.0);
         float yBoost = cosRange(time * 0.1, 10.0, 5.0);
         float fScale = cosRange(time * 15.5, 1.25, 0.5);
-        
+
         for(int i = 1; i < zoom; i++) {
           float _i = float(i);
           vec2 newp = p;
@@ -74,29 +81,29 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
           newp.y += 0.25 / _i * sin(_i * p.x + time * ct * 0.3 / 40.0 + 0.03 * float(i + 15)) * fScale + yBoost;
           p = newp;
         }
-        
+
         // Use cover colors instead of fixed colors
         float colorMix1 = 0.5 * sin(3.0 * p.x) + 0.5;
         float colorMix2 = 0.5 * sin(3.0 * p.y) + 0.5;
         float colorMix3 = sin(p.x + p.y) * 0.5 + 0.5;
         float colorMix4 = sin(p.x - p.y + 1.5) * 0.5 + 0.5;
-        
+
         vec3 col = mix(
           mix(iColor1, iColor2, colorMix1),
           mix(iColor3, iColor4, colorMix4),
           colorMix2 * colorMix3
         );
-        
+
         col *= brightness;
-        
+
         // Add border vignette
         float vigAmt = 5.0;
-        float vignette = (1.0 - vigAmt * (uv.y - 0.5) * (uv.y - 0.5)) * 
+        float vignette = (1.0 - vigAmt * (uv.y - 0.5) * (uv.y - 0.5)) *
                         (1.0 - vigAmt * (uv.x - 0.5) * (uv.x - 0.5));
         float extrusion = (col.x + col.y + col.z) / 4.0;
         extrusion *= 1.5;
         extrusion *= vignette;
-        
+
         gl_FragColor = vec4(col, extrusion);
       }
     `;
@@ -104,36 +111,36 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
     const createShader = (type: number, source: string): WebGLShader | null => {
       const shader = gl.createShader(type);
       if (!shader) return null;
-      
+
       gl.shaderSource(shader, source);
       gl.compileShader(shader);
-      
+
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         console.error('Shader compile error:', gl.getShaderInfoLog(shader));
         gl.deleteShader(shader);
         return null;
       }
-      
+
       return shader;
     };
 
     const vertexShader = createShader(gl.VERTEX_SHADER, vertexShaderSource);
     const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
-    
+
     if (!vertexShader || !fragmentShader) return;
 
     const program = gl.createProgram();
     if (!program) return;
-    
+
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
-    
+
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       console.error('Program link error:', gl.getProgramInfoLog(program));
       return;
     }
-    
+
     programRef.current = program;
 
     // Setup geometry
@@ -188,6 +195,12 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
     window.addEventListener('resize', resize);
 
     const render = () => {
+      // Skip rendering when tab is hidden to save CPU/GPU
+      if (!isVisibleRef.current) {
+        animationFrameRef.current = requestAnimationFrame(render);
+        return;
+      }
+
       if (!gl || !program) return;
 
       const currentTime = Date.now();
@@ -225,6 +238,7 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({ isPlaying = true, c
 
     return () => {
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }

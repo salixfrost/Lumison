@@ -94,7 +94,7 @@ const ProgressBar: React.FC<ProgressBarProps> = memo(({
   };
 
   return (
-    <div className="w-full max-w-xl flex items-center gap-3 text-sm font-medium theme-text-secondary group/bar relative">
+    <div className="w-full max-w-[54rem] flex items-center gap-3 text-sm font-medium theme-text-secondary group/bar relative">
       <span className="w-12 text-right font-mono tracking-wide">
         {formatTime(displayTime)}
       </span>

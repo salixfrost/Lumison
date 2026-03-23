@@ -104,6 +104,10 @@ const TopBar: React.FC<TopBarProps> = ({
     onSearchClick?.();
   }, [onSearchClick]);
 
+  const handleImportUrlClick = useCallback(() => {
+    setIsImportDialogOpen(true);
+  }, []);
+
   const handleMinimize = useCallback(async () => {
     try {
       const appWindow = Window.getCurrent();
