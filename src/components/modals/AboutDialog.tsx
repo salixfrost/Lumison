@@ -11,17 +11,14 @@ interface AboutDialogProps {
 const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
     const { t } = useI18n();
 
-    const openExternalLink = async (event: React.MouseEvent<HTMLAnchorElement>, url: string) => {
-        event.preventDefault();
-        event.stopPropagation();
+    const openExternalLink = async (event: React.MouseEvent | MouseEvent, url: string) => {
+        event.preventDefault?.();
+        event.stopPropagation?.();
 
         try {
             await invoke("open_external_url", { url });
         } catch {
-            const opened = window.open(url, "_blank", "noopener,noreferrer");
-            if (!opened) {
-                window.location.href = url;
-            }
+            window.open(url, "_blank", "noopener,noreferrer");
         }
     };
 
@@ -73,27 +70,21 @@ const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
 
                     {/* Selection List */}
                     <div className="w-full flex flex-col gap-2 mb-6">
-                        <a
-                            href="https://github.com/SalixJFrost/Lumison"
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => openExternalLink(e, "https://github.com/SalixJFrost/Lumison")}
-                            className="flex items-center justify-between px-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-sm font-medium text-white/80 hover:bg-white/10 transition"
+                        <button
+                            onClick={(e) => openExternalLink(e as any, "https://github.com/SalixJFrost/Lumison")}
+                            className="flex items-center justify-between px-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-sm font-medium text-white/80 hover:bg-white/10 transition cursor-pointer"
                         >
                             <span>{t("about.viewOnGitHub")}</span>
                             <span className="text-[11px] text-white/50">↗</span>
-                        </a>
+                        </button>
 
-                        <a
-                            href="https://github.com/salixfrost"
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => openExternalLink(e, "https://github.com/salixfrost")}
-                            className="flex items-center justify-between px-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-sm font-medium text-white/80 hover:bg-white/10 transition"
+                        <button
+                            onClick={(e) => openExternalLink(e as any, "https://github.com/salixfrost")}
+                            className="flex items-center justify-between px-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-sm font-medium text-white/80 hover:bg-white/10 transition cursor-pointer"
                         >
                             <span>{t("about.createdBy")}</span>
                             <span className="text-[11px] text-white/50">↗</span>
-                        </a>
+                        </button>
                     </div>
                 </div>
 

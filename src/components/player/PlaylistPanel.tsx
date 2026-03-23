@@ -94,9 +94,9 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
 
     // Handle animation visibility with react-spring
     const transitions = useTransition(isOpen, {
-        from: { opacity: 0, transform: 'translateY(20px) scale(0.95)' },
+        from: { opacity: 0, transform: 'translateY(-20px) scale(0.95)' },
         enter: { opacity: 1, transform: 'translateY(0px) scale(1)' },
-        leave: { opacity: 0, transform: 'translateY(20px) scale(0.95)' },
+        leave: { opacity: 0, transform: 'translateY(-20px) scale(0.95)' },
         config: { tension: 280, friction: 24 }, // Rebound feel
         onRest: () => {
             if (!isOpen) {
@@ -228,14 +228,14 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                     ref={panelRef}
                     style={{ ...style, maxHeight: '60vh' }}
                     className={`
-                        absolute bottom-24 -right-8 z-50
+                        absolute top-20 -right-8 z-50
                         w-[340px] 
                         bg-black/10 backdrop-blur-[100px] saturate-150
                         rounded-[32px] 
                         shadow-[0_20px_50px_rgba(0,0,0,0.3)] 
                         border border-white/5
                         flex flex-col overflow-hidden
-                        origin-bottom-right
+                        origin-top-right
                     `}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -422,7 +422,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                                             {/* Info Popup */}
                                             {showInfoId === song.id && !isEditing && (
                                                 <div
-                                                    className="absolute right-12 top-0 z-50 w-64 bg-black/90 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border border-white/10"
+                                                    className="absolute left-0 right-0 top-full mt-2 z-50 mx-2 bg-black/40 backdrop-blur-2xl saturate-150 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex flex-col gap-3">
