@@ -92,6 +92,29 @@ const parseMusixmatchSubtitleBody = (subtitleBody: string): string | null => {
 };
 
 /**
+ * Fast lyrics fetch via music.3e0.cn (Meting-style API).
+ * ~300ms vs ~3500ms for the standard Netease endpoint.
+ */
+const fetchLyricsViaMeting = async (songId: string): Promise<LyricsResult | null> => {
+  const startTime = Date.now();
+  try {
+    const lrcUrl = `https://music.3e0.cn/?server=netease&type=lrc&id=${songId}`;
+    const response = await fetch(lrcUrl, { signal: AbortSignal.timeout(6000) });
+    if (!response.ok) return null;
+    const lrc = await response.text();
+    if (!lrc?.trim() || lrc.includes('"error"')) return null;
+    return {
+      lrc,
+      metadata: [],
+      source: "netease",
+      responseTime: Date.now() - startTime,
+    };
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Search Netease using the centralized request handler.
  */
 const searchNeteaseMusic = async (keyword: string): Promise<any> => {
@@ -107,15 +130,21 @@ const searchNeteaseMusic = async (keyword: string): Promise<any> => {
 };
 
 /**
- * Fetch lyrics and cover from Netease.
+ * Fetch lyrics and cover from Netease — tries fast Meting API first, falls back to standard endpoint.
  */
 const fetchNeteaseMusicLyrics = async (songId: string, coverUrl?: string): Promise<LyricsResult | null> => {
   const startTime = Date.now();
+
+  // Try fast Meting API first (~300ms)
+  const metingResult = await fetchLyricsViaMeting(songId);
+  if (metingResult) {
+    return { ...metingResult, coverUrl, responseTime: Date.now() - startTime };
+  }
+
+  // Fallback to standard Netease endpoint
   try {
     const response = await fetchNeteaseWithFallback(`/lyric/new?id=${songId}`);
-
     if (!response?.lrc?.lyric) return null;
-
     return {
       lrc: response.lrc.lyric,
       yrc: response.yrc?.lyric,

@@ -39,7 +39,7 @@ interface UsePlayerParams {
   setOriginalQueue: Dispatch<SetStateAction<Song[]>>;
 }
 
-const MATCH_TIMEOUT_MS = 10000; // 减少到 10 秒，并行搜索应该更快
+const MATCH_TIMEOUT_MS = 15000; // 15s total — enough for 2-3 endpoint attempts at 5s each
 
 const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
   return new Promise<T>((resolve, reject) => {
@@ -381,6 +381,73 @@ export const usePlayer = ({
     if (existingLyrics.length > 0) {
       seedCachedMatchedLyrics(lyricsCacheKey, existingLyrics);
       markMatchSuccess();
+
+      // If we have local lyrics but online enrichment is still desired, try silently in background
+      if (!needsLyricsMatch) return;
+
+      // Background enrichment — don't block or change matchStatus
+      const enrichInBackground = async () => {
+        try {
+          const matchedLyrics = await resolveMatchedLyrics(
+            lyricsCacheKey,
+            () =>
+              withTimeout(
+                isNeteaseSong && songNeteaseId
+                  ? fetchLyricsById(songNeteaseId)
+                  : searchAndMatchLyrics(songTitle, songArtist),
+                MATCH_TIMEOUT_MS,
+              ),
+          );
+          if (cancelled || !matchedLyrics) return;
+          // Only upgrade if online lyrics have word-level timing (richer than LRC)
+          const hasWordTiming = matchedLyrics.some((l) => l.words && l.words.length > 0);
+          if (hasWordTiming) {
+            updateSongInQueue(songId, { lyrics: matchedLyrics, needsLyricsMatch: false });
+          } else {
+            updateSongInQueue(songId, { needsLyricsMatch: false });
+          }
+        } catch {
+          // Silent failure — we already have good lyrics
+          updateSongInQueue(songId, { needsLyricsMatch: false });
+        }
+      };
+      enrichInBackground();
+      return;
+    }
+
+    // If no existing lyrics but we have localLyrics (from ID3 or sidecar), use them immediately
+    if (localLyrics.length > 0) {
+      updateSongInQueue(songId, { lyrics: localLyrics });
+      seedCachedMatchedLyrics(lyricsCacheKey, localLyrics);
+      markMatchSuccess();
+
+      // Still try enrichment in background if needed
+      if (needsLyricsMatch) {
+        const enrichInBackground = async () => {
+          try {
+            const matchedLyrics = await resolveMatchedLyrics(
+              lyricsCacheKey,
+              () =>
+                withTimeout(
+                  isNeteaseSong && songNeteaseId
+                    ? fetchLyricsById(songNeteaseId)
+                    : searchAndMatchLyrics(songTitle, songArtist),
+                  MATCH_TIMEOUT_MS,
+                ),
+            );
+            if (cancelled || !matchedLyrics) return;
+            const hasWordTiming = matchedLyrics.some((l) => l.words && l.words.length > 0);
+            if (hasWordTiming) {
+              updateSongInQueue(songId, { lyrics: matchedLyrics, needsLyricsMatch: false });
+            } else {
+              updateSongInQueue(songId, { needsLyricsMatch: false });
+            }
+          } catch {
+            updateSongInQueue(songId, { needsLyricsMatch: false });
+          }
+        };
+        enrichInBackground();
+      }
       return;
     }
 
@@ -449,47 +516,56 @@ export const usePlayer = ({
     };
   }, [currentSong?.id, resolveMatchedLyrics, updateSongInQueue]);
 
-  // 预加载下一首歌的歌词
+  // 预加载接下来最多5首歌的歌词
   useEffect(() => {
-    if (currentIndex < 0 || currentIndex >= queue.length - 1) return;
+    if (currentIndex < 0 || queue.length <= 1) return;
 
-    const nextSong = queue[currentIndex + 1];
-    if (!nextSong || !nextSong.needsLyricsMatch || (nextSong.lyrics && nextSong.lyrics.length > 0)) {
-      return; // 下一首不需要匹配或已有歌词
+    const preloadWindowSize = 5;
+    const startIdx = currentIndex + 1;
+    const endIdx = Math.min(queue.length - 1, currentIndex + preloadWindowSize);
+
+    const timers: number[] = [];
+
+    for (let i = startIdx; i <= endIdx; i++) {
+      const song = queue[i];
+      if (!song || !song.needsLyricsMatch || (song.lyrics && song.lyrics.length > 0)) {
+        continue;
+      }
+
+      const lyricsCacheKey = song.isNetease && song.neteaseId
+        ? createNeteaseLyricsCacheKey(song.neteaseId)
+        : createSearchLyricsCacheKey(song.title, song.artist);
+
+      // 延迟逐渐增加，避免瞬时过多请求
+      const delay = 2000 + (i - startIdx) * 500;
+      const timer = window.setTimeout(async () => {
+        try {
+          const matchedLyrics = await resolveMatchedLyrics(
+            lyricsCacheKey,
+            () =>
+              withTimeout(
+                song.isNetease && song.neteaseId
+                  ? fetchLyricsById(song.neteaseId)
+                  : searchAndMatchLyrics(song.title, song.artist),
+                MATCH_TIMEOUT_MS,
+              ),
+          );
+
+          if (matchedLyrics) {
+            updateSongInQueue(song.id, {
+              lyrics: matchedLyrics,
+              needsLyricsMatch: false,
+            });
+          }
+        } catch (error) {
+          // 静默失败，不影响体验
+        }
+      }, delay);
+
+      timers.push(timer);
     }
 
-    const lyricsCacheKey = nextSong.isNetease && nextSong.neteaseId
-      ? createNeteaseLyricsCacheKey(nextSong.neteaseId)
-      : createSearchLyricsCacheKey(nextSong.title, nextSong.artist);
-
-    // 延迟 2 秒后开始预加载，避免影响当前歌曲的播放
-    const preloadTimer = setTimeout(async () => {
-      // console.log(`🔮 Preloading lyrics for next song: "${nextSong.title}"`);
-
-      try {
-        const matchedLyrics = await resolveMatchedLyrics(
-          lyricsCacheKey,
-          () =>
-            withTimeout(
-              nextSong.isNetease && nextSong.neteaseId
-                ? fetchLyricsById(nextSong.neteaseId)
-                : searchAndMatchLyrics(nextSong.title, nextSong.artist),
-              MATCH_TIMEOUT_MS,
-            ),
-        );
-
-        if (matchedLyrics) {
-          updateSongInQueue(nextSong.id, {
-            lyrics: matchedLyrics,
-            needsLyricsMatch: false,
-          });
-        }
-      } catch (error) {
-        console.warn(`⚠️ Failed to preload lyrics for: "${nextSong.title}"`, error);
-      }
-    }, 2000);
-
-    return () => clearTimeout(preloadTimer);
+    return () => timers.forEach(timer => clearTimeout(timer));
   }, [currentIndex, queue, updateSongInQueue, resolveMatchedLyrics]);
 
   useEffect(() => {

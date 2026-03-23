@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find src-tauri:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl --version)",
+      "Bash(curl:*)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 23168 -Force -ErrorAction SilentlyContinue\" 2>&1)",
+      "Bash(xargs grep:*)",
+      "Bash(cargo check:*)",
+      "Bash(:)",
+      "Bash(tasklist)",
+      "Bash(findstr cargo:*)"
+    ]
+  }
+}

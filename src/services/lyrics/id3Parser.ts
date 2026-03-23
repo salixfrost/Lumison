@@ -10,12 +10,7 @@
 import { LyricLine } from './types';
 import { parseLyrics } from './index';
 
-// Import jsmediatags - Vite will resolve to dist/jsmediatags.min.js via alias
-// The minified version exports as a UMD module
-import * as jsmediat from 'jsmediatags';
-
-// Handle both default and named exports
-const jsmediatags = (jsmediat as any).default || jsmediat;
+import jsmediatags from 'jsmediatags';
 
 export interface AudioTagExtractionResult {
   title?: string;
@@ -32,12 +27,11 @@ const extractPictureFromTags = (tags: any): string | undefined => {
 
   try {
     const { data, format } = tags.picture;
-    let base64String = "";
-    const len = data.length;
-    for (let i = 0; i < len; i++) {
-      base64String += String.fromCharCode(data[i]);
-    }
-    return `data:${format};base64,${window.btoa(base64String)}`;
+    // Use Uint8Array + TextDecoder-safe approach via Blob URL to handle
+    // arbitrary binary data without btoa's Latin-1 restriction
+    const uint8 = new Uint8Array(data);
+    const blob = new Blob([uint8], { type: format });
+    return URL.createObjectURL(blob);
   } catch (error) {
     console.warn('Failed to extract cover art from tags:', error);
     return undefined;
@@ -48,7 +42,9 @@ const extractLyricsFromTags = (tags: any, fileName: string): { lyrics: LyricLine
   // Try USLT (Unsynchronized Lyrics) - most common
   if (tags.USLT) {
     const usltData = Array.isArray(tags.USLT) ? tags.USLT[0] : tags.USLT;
-    const lyricsText = usltData.lyrics || usltData.text || usltData;
+    // jsmediatags returns USLT as { lyrics, description, language } or as a plain string
+    const lyricsText =
+      (typeof usltData === 'object' ? (usltData.lyrics ?? usltData.text ?? usltData.data) : usltData);
 
     if (typeof lyricsText === 'string' && lyricsText.trim()) {
       console.log(`✓ Found ID3 USLT lyrics in: ${fileName}`);
@@ -119,9 +115,10 @@ export const extractAudioTagData = async (
 
     const timeoutPromise = new Promise<AudioTagExtractionResult>((resolve) => {
       setTimeout(() => {
-        console.warn(`ID3 parsing timeout for: ${file.name}`);
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        console.warn(`Local metadata parsing timeout (10s) for: ${file.name} (${fileSizeMB}MB). Using online lyrics.`);
         resolve({ lyrics: [], source: 'none' });
-      }, 5000);
+      }, 10000);
     });
 
     const parsePromise = new Promise<AudioTagExtractionResult>((resolve) => {

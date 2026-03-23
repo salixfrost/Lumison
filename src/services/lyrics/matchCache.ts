@@ -1,4 +1,8 @@
 import { LyricLine } from "../../types";
+import {
+  getLyricsFromPersistentCache,
+  storeLyricsInPersistentCache,
+} from "../cache/idbLyricsCache";
 
 const LYRICS_CACHE_HIT_TTL_MS = 30 * 60 * 1000;
 const LYRICS_CACHE_MISS_TTL_MS = 5 * 60 * 1000;
@@ -61,9 +65,21 @@ export const getCachedMatchedLyrics = async <T>(
 
     const promise = (async () => {
         try {
+            // First, try persistent cache
+            const persistentLyrics = await getLyricsFromPersistentCache(cacheKey);
+            if (persistentLyrics !== null) {
+                writeResolvedLyricsMatch(cacheKey, persistentLyrics);
+                return persistentLyrics;
+            }
+
+            // No persistent cache hit, load from network
             const payload = await loader();
             const parsedLyrics = payload ? parser(payload) : null;
             writeResolvedLyricsMatch(cacheKey, parsedLyrics);
+            // Store successful lyrics in persistent cache
+            if (parsedLyrics !== null) {
+                await storeLyricsInPersistentCache(cacheKey, parsedLyrics);
+            }
             return parsedLyrics;
         } finally {
             pendingLyricsMatches.delete(cacheKey);
@@ -79,4 +95,8 @@ export const seedCachedMatchedLyrics = (
     lyrics: LyricLine[] | null,
 ) => {
     writeResolvedLyricsMatch(cacheKey, lyrics);
+    if (lyrics !== null) {
+        // Store in persistent cache in background
+        storeLyricsInPersistentCache(cacheKey, lyrics).catch(() => {});
+    }
 };

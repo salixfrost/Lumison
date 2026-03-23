@@ -44,7 +44,7 @@ const tokenizeLine = (line: string): LrcToken[] => {
   let cursor = 0;
 
   // Extract time tags: [mm:ss.xx]
-  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
+  const timeRegex = /\[(\d{2}):(\d{2})[\\.,:](\d{2,3})\]/g;
   let match: RegExpExecArray | null;
 
   while ((match = timeRegex.exec(trimmed)) !== null) {
@@ -74,7 +74,7 @@ const tokenizeLine = (line: string): LrcToken[] => {
   }
 
   // Parse word timing tags: <mm:ss.xx>word
-  const wordRegex = /<(\d{2}):(\d{2})\.(\d{2,3})>([^<]*)/g;
+  const wordRegex = /<(\d{2}):(\d{2})[\\.,:](\d{2,3})>([^<]*)/g;
   const wordMatches = [...content.matchAll(wordRegex)];
 
   if (wordMatches.length > 0) {
@@ -281,4 +281,32 @@ export const parseLrc = (content: string): LyricLine[] => {
   const withInterludes = insertInterludes(lines);
 
   return addDurations(withInterludes);
+};
+
+/**
+ * Parse plain text lyrics (no timestamps) into LyricLines.
+ * Assigns incremental times starting at 0 with 5-second gaps.
+ */
+export const parsePlainTextLyrics = (content: string): LyricLine[] => {
+  if (!content?.trim()) return [];
+
+  const lines = content.split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0 && !line.startsWith('['));
+
+  if (lines.length === 0) return [];
+
+  const lyricLines: LyricLine[] = [];
+  const LINE_INTERVAL = 5.0; // seconds between lines
+
+  for (let i = 0; i < lines.length; i++) {
+    lyricLines.push({
+      time: i * LINE_INTERVAL,
+      text: lines[i],
+      isPreciseTiming: false,
+      isMetadata: false,
+    });
+  }
+
+  return lyricLines;
 };

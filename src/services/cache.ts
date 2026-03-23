@@ -7,6 +7,15 @@ const isMobileViewport = () => {
   return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
 };
 
+const isTauri = typeof window !== 'undefined' && !!window.__TAURI__;
+
+// Helper to list cached keys from Tauri SQLite (used during cache initialization)
+const listCachedKeysFromTauri = async (): Promise<string[]> => {
+  if (!isTauri) return [];
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<string[]>('list_cached_keys');
+};
+
 const createSizeLimitedLRU = (limitBytes: number) => {
   const map = new Map<string, { blob: Blob; size: number }>();
   let totalSize = 0;
@@ -102,7 +111,49 @@ const RAW_IMAGE_CACHE_LIMIT = cacheLimits.rawImage * 1024 * 1024;
 
 const rawImageCache = createSizeLimitedLRU(RAW_IMAGE_CACHE_LIMIT);
 
-export const imageResourceCache = createSizeLimitedLRU(IMAGE_CACHE_LIMIT);
+// Create image cache - use SQLite for Tauri, memory LRU for web
+type CacheInterface = ReturnType<typeof createSizeLimitedLRU>;
+
+const createCacheProxy = (): CacheInterface => {
+  let delegate: CacheInterface = createSizeLimitedLRU(IMAGE_CACHE_LIMIT);
+
+  // If in Tauri, asynchronously load SQLite adapter and preload keys
+  if (isTauri) {
+    import('./cache/tauriCacheAdapter').then(async ({ createTauriCacheAdapter }) => {
+      try {
+        const tauriAdapter = await createTauriCacheAdapter(cacheLimits.image);
+
+        // Preload keys from SQLite
+        try {
+          const keys = await listCachedKeysFromTauri();
+          console.log(`Preloaded ${keys.length} cached images from SQLite`);
+          // For now, we just have the adapter, keys will be loaded lazily
+        } catch (preloadError) {
+          console.warn('Failed to preload cache keys:', preloadError);
+        }
+
+        // Swap delegate
+        delegate = tauriAdapter;
+      } catch (error) {
+        console.warn('Failed to load Tauri cache adapter, staying with memory LRU:', error);
+      }
+    }).catch((error) => {
+      console.warn('Failed to import Tauri cache adapter:', error);
+    });
+  }
+
+  return {
+    get: (key: string) => delegate.get(key),
+    set: (key: string, blob: Blob) => delegate.set(key, blob),
+    delete: (key: string) => delegate.delete(key),
+    clear: () => delegate.clear(),
+    getLimit: () => delegate.getLimit(),
+  };
+};
+
+const imageResourceCache = createCacheProxy();
+
+export { imageResourceCache };
 export const audioResourceCache = createSizeLimitedLRU(AUDIO_CACHE_LIMIT);
 
 export const fetchImageBlobWithCache = async (url: string): Promise<Blob> => {
@@ -125,7 +176,6 @@ export const loadImageElementWithCache = async (
   const blob = await fetchImageBlobWithCache(url);
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
     const objectUrl = URL.createObjectURL(blob);
     img.onload = () => {
       URL.revokeObjectURL(objectUrl);

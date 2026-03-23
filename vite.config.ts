@@ -3,23 +3,19 @@ import { defineConfig, loadEnv, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 
-// Plugin to dynamically update manifest.json based on base path
 function manifestPlugin(base: string): Plugin {
   return {
     name: 'manifest-plugin',
     apply: 'build',
     closeBundle() {
-      // Only modify if not root path
       if (base === '/') return;
 
       const manifestPath = path.resolve(__dirname, 'dist/manifest.json');
       if (fs.existsSync(manifestPath)) {
         const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
-        // Update paths to include base
         manifest.start_url = base;
         manifest.icons = manifest.icons.map((icon: any) => {
-          // Handle both relative and absolute paths
           const iconSrc = icon.src.startsWith('/') ? icon.src.slice(1) : icon.src;
           return {
             ...icon,
@@ -35,16 +31,13 @@ function manifestPlugin(base: string): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
+  const env = loadEnv(mode, __dirname, '');
   const isTauri = process.env.TAURI_ENV_PLATFORM !== undefined;
   const base = isTauri ? '/' : './';
 
   return {
-    // Use root path for Tauri, repo name for GitHub Pages
     base,
-    root: '.',
 
-    // Tauri uses a different server configuration
     server: {
       port: isTauri ? 1420 : 3000,
       host: '0.0.0.0',
@@ -53,7 +46,6 @@ export default defineConfig(({ mode }) => {
 
     plugins: [react(), manifestPlugin(base)],
 
-    // Ensure Tauri API is available in desktop mode
     define: {
       '__TAURI__': isTauri,
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
@@ -63,17 +55,14 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
-        // Fix jsmediatags module resolution - use minified browser build
-        'jsmediatags': path.resolve(__dirname, 'node_modules/jsmediatags/dist/jsmediatags.min.js'),
+        'jsmediatags': path.resolve(__dirname, 'src/vendor/jsmediatags-shim.js'),
       },
     },
 
-    // Optimize dependencies
     optimizeDeps: {
-      include: ['jsmediatags'],
+      exclude: ['jsmediatags'],
     },
 
-    // Optimize for desktop builds
     build: {
       target: isTauri ? 'esnext' : 'es2015',
       minify: mode === 'production',

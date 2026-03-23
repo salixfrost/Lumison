@@ -96,20 +96,6 @@ export default {
     selectSong: "选择一首歌曲",
   },
 
-  // 专注模式
-  focus: {
-    session: "专注模式",
-    duration: "选择时长",
-    custom: "自定义",
-    minutes: "分钟",
-    seconds: "秒",
-    start: "开始",
-    pause: "暂停",
-    resume: "继续",
-    finish: "完成",
-    autoPause: "完成后自动暂停",
-  },
-
   // 倍速设置
   speed: {
     title: "播放速度",
@@ -276,7 +262,6 @@ export default {
     theme: "主题",
     language: "语言",
     about: "关于",
-    checkUpdate: "检查更新",
     enterFullscreen: "进入全屏",
     exitFullscreen: "退出全屏",
     minimize: "最小化",
@@ -297,19 +282,5 @@ export default {
     label: "视图模式",
     default: "默认",
     lyrics: "歌词",
-  },
-
-  // 更新通知
-  update: {
-    available: "发现新版本",
-    version: "版本",
-    description: "新版本包含性能改进和错误修复。",
-    downloading: "下载中...",
-    updating: "更新中...",
-    updateNow: "立即更新",
-    later: "稍后",
-    checkingForUpdates: "检查更新中...",
-    upToDate: "已是最新版本！",
-    currentVersion: "当前版本",
   },
 };

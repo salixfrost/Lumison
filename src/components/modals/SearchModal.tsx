@@ -386,6 +386,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             <button
               onClick={() => {
                 search.setActiveTab("queue");
+                search.setQuery("");
               }}
               className={`
                         relative min-w-0 flex-1 py-1.5 px-1 text-xs sm:text-[13px] font-medium truncate transition-colors duration-200 z-10
@@ -397,6 +398,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
             <button
               onClick={() => {
                 search.setActiveTab("online");
+                search.setQuery("");
               }}
               className={`
                         relative min-w-0 flex-1 py-1.5 px-1 text-xs sm:text-[13px] font-medium truncate transition-colors duration-200 z-10

@@ -291,7 +291,22 @@ export const fetchLyricsById = async (
   songId: string,
 ): Promise<{ lrc: string; yrc?: string; tLrc?: string; metadata: string[] } | null> => {
   try {
-    // Fetch lyrics by song ID from the Netease lyrics endpoint.
+    // Try fast Meting API first (~300ms)
+    const metingUrl = `https://music.3e0.cn/?server=netease&type=lrc&id=${songId}`;
+    const metingRes = await fetch(metingUrl, { signal: AbortSignal.timeout(6000) });
+    if (metingRes.ok) {
+      const lrc = await metingRes.text();
+      if (lrc?.trim() && !lrc.includes('"error"')) {
+        const { clean, metadata } = extractMetadataLines(lrc);
+        if (clean) return { lrc: clean, metadata };
+      }
+    }
+  } catch {
+    // fall through to standard endpoint
+  }
+
+  try {
+    // Fallback: standard Netease endpoint
     const lyricUrl = `/lyric/new?id=${songId}`;
     const lyricData = await fetchWithFallback(lyricUrl);
 

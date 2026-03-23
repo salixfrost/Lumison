@@ -171,23 +171,10 @@ const TopBar: React.FC<TopBarProps> = ({
     setShowFocusSessionModal(true);
   }, []);
 
-  const handleCheckUpdate = useCallback(async () => {
-    setIsCheckingUpdate(true);
-    try {
-      const updateInfo = await UpdateService.checkForUpdates();
-
-      if (updateInfo.available) {
-        // 显示更新通知
-        alert(`发现新版本 ${updateInfo.latestVersion}\n\n${updateInfo.body || ''}`);
-      } else {
-        alert('当前已是最新版本');
-      }
-    } catch (error) {
-      console.error('检查更新失败:', error);
-      alert('检查更新失败，请稍后重试');
-    } finally {
-      setIsCheckingUpdate(false);
-    }
+  const formatFocusTime = useCallback((seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, []);
 
   // Fullscreen change listener
@@ -290,20 +277,6 @@ const TopBar: React.FC<TopBarProps> = ({
 
         {/* Actions */}
         <div className={`flex gap-2 ${transitionClasses.base} delay-75 ${transitionClasses.mobileActive} ${transitionClasses.hoverSupport}`}>
-          {/* Focus Session Button */}
-          <button
-            onClick={handleToggleFocusSession}
-            className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${
-              showFocusSessionModal || focusSession?.isActive ? "text-white bg-white/20 scale-110" : "text-white/80"
-            }`}
-            title={t("focus.session") || "专注模式"}
-            aria-label={t("focus.session") || "专注模式"}
-          >
-            <FocusSessionIcon className={`w-5 h-5 transition-transform duration-500 ease-out ${
-              showFocusSessionModal || focusSession?.isActive ? 'scale-110' : ''
-            }`} />
-          </button>
-
           {/* Settings Button */}
           <div className="relative" ref={settingsContainerRef} onPointerDown={(e) => e.stopPropagation()}>
             <button
@@ -369,29 +342,37 @@ const TopBar: React.FC<TopBarProps> = ({
                     </div>
                   )}
 
+                  {/* Focus Session Button */}
+                  <div className="space-y-2">
+                    <label className="text-white/70 text-xs">{t("focus.session") || "专注模式"}</label>
+                    <button
+                      onClick={handleToggleFocusSession}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] ${
+                        focusSession?.isActive
+                          ? 'bg-white/20 text-white'
+                          : 'bg-white/5 text-white/80 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <FocusSessionIcon className="w-4 h-4" />
+                        <span className="text-sm">
+                          {focusSession?.isActive
+                            ? `${formatFocusTime(focusSession.remainingTime)}`
+                            : t("focus.start") || "开始专注"}
+                        </span>
+                      </div>
+                      {focusSession?.isActive && (
+                        <span className="text-xs text-white/60">
+                          {t("focus.active") || "进行中"}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
                   {/* Language Switcher */}
                   <LanguageSwitcher variant="settings" />
 
                   <div className="h-px bg-white/10 my-1" />
-
-                  {/* Check Update Button */}
-                  <button
-                    onClick={handleCheckUpdate}
-                    disabled={isCheckingUpdate}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="text-sm">{t("topBar.checkUpdate") || "检查更新"}</span>
-                    {isCheckingUpdate ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    )}
-                  </button>
 
                   {/* About Button */}
                   <button

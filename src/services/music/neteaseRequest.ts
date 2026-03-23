@@ -1,6 +1,6 @@
 export const NETEASE_API_ENDPOINTS = [
+  "https://music-api.heheda.top",           // primary — confirmed working, CORS supported
   "https://163api.qijieya.cn",
-  "https://music-api.heheda.top",
   "https://netease-cloud-music-api-psi-ten.vercel.app",
   "https://netease-api.fe-mm.com",
   "https://netease-music-api.vercel.app",
@@ -57,7 +57,7 @@ export async function fetchNeteaseWithFallback(
   endpoint: string,
   config: NeteaseRequestConfig = {},
 ): Promise<any> {
-  const { timeout = 8000 } = config;
+  const { timeout = 5000 } = config; // 5s per endpoint — leaves room for fallbacks within 10s total
   const candidates = NETEASE_API_ENDPOINTS.filter(isEndpointAvailable);
   const toTry = candidates.length > 0 ? candidates : [...NETEASE_API_ENDPOINTS];
 

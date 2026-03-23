@@ -14,7 +14,7 @@
  */
 
 import { LyricLine } from "./types";
-import { parseLrc } from "./lrc";
+import { parseLrc, parsePlainTextLyrics } from "./lrc";
 import { parseNeteaseLyrics, isNeteaseFormat } from "./netease";
 import { mergeTranslations } from "./translation";
 
@@ -60,6 +60,11 @@ export const parseLyrics = (
   } else {
     // Standard LRC format
     lines = parseLrc(content);
+  }
+
+  // If no lines were parsed, try plain text fallback
+  if (lines.length === 0) {
+    lines = parsePlainTextLyrics(content);
   }
 
   // Merge translations if provided

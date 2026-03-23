@@ -9,6 +9,7 @@ import React, {
   useState,
 } from "react";
 import { imageResourceCache } from "../../services/cache";
+import { getStableImageKey } from "../../utils/fileHash";
 
 const makeCacheKey = (src: string, width: number, height: number) => {
   const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
@@ -26,11 +27,10 @@ interface SmartImageProps
   placeholder?: React.ReactNode;
   targetWidth?: number;
   targetHeight?: number;
-  loading?: "lazy" | "eager";
 }
 
 const DEFAULT_PLACEHOLDER = (
-  <div className="w-full h-full flex items-center justify-center bg-white/5 text-white/30 text-[10px] font-semibold tracking-widest">
+  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 to-white/10 animate-pulse text-white/30 text-[10px] font-semibold tracking-widest">
     <span>♪</span>
   </div>
 );
@@ -55,8 +55,10 @@ const SmartImage: React.FC<SmartImageProps> = ({
     null,
   );
   const [displaySrc, setDisplaySrc] = useState<string | null>(null);
+  const [stableKey, setStableKey] = useState<string | null>(null);
   const currentUrlRef = useRef<string | null>(null);
   const currentUrlIsBlobRef = useRef(false);
+  const lastComputedSrcRef = useRef<string | null>(null);
 
   const revokeCurrentObjectUrl = useCallback(() => {
     if (currentUrlRef.current && currentUrlIsBlobRef.current) {
@@ -163,6 +165,49 @@ const SmartImage: React.FC<SmartImageProps> = ({
     return () => observer.disconnect();
   }, [targetHeight, targetWidth]);
 
+  // Compute stable cache key for image src (handles blob URLs by hashing content)
+  useEffect(() => {
+    if (!src) {
+      lastComputedSrcRef.current = null;
+      setStableKey(null);
+      return;
+    }
+
+    // If src changed, reset stableKey and lastComputedSrc
+    if (lastComputedSrcRef.current !== src) {
+      lastComputedSrcRef.current = null;
+      setStableKey(null);
+    }
+
+    // If already computed for this src, keep current stableKey
+    if (stableKey !== null && lastComputedSrcRef.current === src) {
+      return;
+    }
+
+    if (!isVisible) {
+      return; // Wait until visible to compute
+    }
+
+    let canceled = false;
+    lastComputedSrcRef.current = src;
+
+    getStableImageKey(src)
+      .then((key) => {
+        if (!canceled && lastComputedSrcRef.current === src) {
+          setStableKey(key);
+        }
+      })
+      .catch(() => {
+        if (!canceled && lastComputedSrcRef.current === src) {
+          setStableKey(src); // Fallback to original src
+        }
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [src, isVisible, stableKey]);
+
   const normalizedSize = useMemo(() => {
     if (!measuredSize) return null;
     const width = Math.max(1, Math.round(measuredSize.width));
@@ -172,9 +217,9 @@ const SmartImage: React.FC<SmartImageProps> = ({
   }, [measuredSize]);
 
   const effectiveKey = useMemo(() => {
-    if (!normalizedSize || !src) return null;
-    return makeCacheKey(src, normalizedSize.width, normalizedSize.height);
-  }, [normalizedSize, src]);
+    if (!normalizedSize || !stableKey) return null;
+    return makeCacheKey(stableKey, normalizedSize.width, normalizedSize.height);
+  }, [normalizedSize, stableKey]);
 
   useEffect(() => {
     if (!normalizedSize || !src || !effectiveKey) {
@@ -254,7 +299,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
       }
     };
 
-    imageElement.crossOrigin = "anonymous";
+    imageElement.crossOrigin = src.startsWith("blob:") || src.startsWith("data:") ? "" : "anonymous";
     imageElement.onload = () => {
       if (canceled) return;
       if (!imageElement.naturalWidth || !imageElement.naturalHeight) {
@@ -289,7 +334,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
           alt={alt}
           className={imgClassName}
           style={imgStyle}
-          loading={loading}
+          loading={loading as "lazy" | "eager"}
           {...imgProps}
         />
       ) : (

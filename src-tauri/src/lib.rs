@@ -6,6 +6,8 @@ mod mobile;
 #[cfg(mobile)]
 pub use mobile::*;
 
+mod sqlite_cache;
+
 use std::process::Command;
 
 #[tauri::command]
@@ -65,7 +67,13 @@ impl AppBuilder {
     pub fn run(self) {
         let setup = self.setup;
         tauri::Builder::default()
-            .invoke_handler(tauri::generate_handler![open_external_url])
+            .invoke_handler(tauri::generate_handler![
+                open_external_url,
+                sqlite_cache::get_cached_image,
+                sqlite_cache::put_cached_image,
+                sqlite_cache::delete_cached_image,
+                sqlite_cache::list_cached_keys
+            ])
             .setup(move |app| {
                 if let Some(setup) = setup {
                     (setup)(app)?;

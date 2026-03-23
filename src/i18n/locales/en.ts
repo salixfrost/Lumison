@@ -96,20 +96,6 @@ export default {
     selectSong: "Select a song",
   },
 
-  // Focus Session
-  focus: {
-    session: "Focus Session",
-    duration: "Select Duration",
-    custom: "Custom",
-    minutes: "min",
-    seconds: "sec",
-    start: "Start",
-    pause: "Pause",
-    resume: "Resume",
-    finish: "Complete",
-    autoPause: "Auto-pause after completion",
-  },
-
   // Speed Settings
   speed: {
     title: "Playback Speed",
@@ -276,7 +262,6 @@ export default {
     theme: "Theme",
     language: "Language",
     about: "About",
-    checkUpdate: "Check for Updates",
     enterFullscreen: "Enter Fullscreen",
     exitFullscreen: "Exit Fullscreen",
     minimize: "Minimize",
@@ -300,18 +285,6 @@ export default {
   },
 
   // Update Notification
-  update: {
-    available: "New Update Available",
-    version: "Version",
-    description: "A new version is available with performance improvements and bug fixes.",
-    downloading: "Downloading...",
-    updating: "Updating...",
-    updateNow: "Update Now",
-    later: "Later",
-    checkingForUpdates: "Checking for updates...",
-    upToDate: "You're up to date!",
-    currentVersion: "Current version",
-  },
 
   // Share
   share: {

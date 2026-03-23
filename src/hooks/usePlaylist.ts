@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { Song } from "../types";
+import { LyricLine } from "../services/lyrics/types";
 import {
   extractColors,
   parseNeteaseLink,
@@ -124,22 +125,33 @@ export const usePlaylist = () => {
             console.log(`✓ Found ${tagData.source} embedded lyrics for: ${title}`);
           }
 
-          // 确定初始歌词
-          let initialLyrics: { time: number; text: string }[] = [];
+          // Determine initial lyrics — priority: embedded > LRC file > online search
+          let initialLyrics: LyricLine[] = [];
           let needsOnlineSearch = false;
 
           if (embeddedLyrics.length > 0) {
+            // Embedded lyrics are highest priority — use immediately, no online search needed
             initialLyrics = embeddedLyrics;
             needsOnlineSearch = false;
             console.log(`📝 Using embedded lyrics for: ${title}`);
+          } else if (lrcFileLyrics.length > 0) {
+            // LRC file found — use it immediately, still try online for better sync/translation
+            initialLyrics = lrcFileLyrics;
+            needsOnlineSearch = true;
+            console.log(`📄 Using LRC file lyrics for: ${title} (will try online for enrichment)`);
           } else {
             initialLyrics = [];
             needsOnlineSearch = true;
             console.log(`🔍 Will search online for: ${title}`);
           }
 
+          // Determine localLyrics fallback: embedded > LRC file
+          const localLyrics = embeddedLyrics.length > 0
+            ? embeddedLyrics
+            : (lrcFileLyrics.length > 0 ? lrcFileLyrics : undefined);
+
           return {
-            id: `local-${Date.now()}-${i}`,
+            id: `local-${file.name}-${file.size}-${file.lastModified}`,
             title,
             artist,
             fileUrl: url,
@@ -147,13 +159,13 @@ export const usePlaylist = () => {
             lyrics: initialLyrics,
             colors: colors && colors.length > 0 ? colors : undefined,
             needsLyricsMatch: needsOnlineSearch,
-            localLyrics: lrcFileLyrics,
+            localLyrics,
           };
         } catch (err) {
           console.warn(`Failed to process: ${file.name}`, err);
 
           return {
-            id: `local-${Date.now()}-${i}`,
+            id: `local-${file.name}-${file.size}-${file.lastModified}`,
             title,
             artist,
             fileUrl: url,
