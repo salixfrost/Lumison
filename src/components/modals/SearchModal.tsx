@@ -8,6 +8,7 @@ import {
   NeteaseTrackInfo,
 } from "../../services/music/lyricsService";
 import { StreamingTrack } from "../../services/streaming/types";
+import { KugouTrack } from "../../services/music/kugouApi";
 import { useKeyboardScope } from "../../hooks/useKeyboardScope";
 import { useSearchModal } from "../../hooks/useSearchModal";
 import { useI18n } from "../../contexts/I18nContext";
@@ -223,6 +224,12 @@ const SearchModal: React.FC<SearchModalProps> = ({
           playNeteaseTrack(track);
           onClose();
         }
+      } else if (search.onlineSource === "kugou") {
+        const track = search.kugouResults[index];
+        if (track) {
+          playKugouTrack(track);
+          onClose();
+        }
       } else {
         const track = search.archiveResults[index];
         if (track) {
@@ -305,6 +312,99 @@ const SearchModal: React.FC<SearchModalProps> = ({
     onAddToQueue(song);
   };
 
+  const playKugouTrack = async (track: KugouTrack) => {
+    try {
+      const { getKugouSongUrl } = await import("../../services/music/kugouApi");
+      const audioUrl = await getKugouSongUrl(track.hash);
+      
+      const song: Song = {
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+        coverUrl: track.coverUrl || "",
+        fileUrl: audioUrl || "",
+        isAudioStream: true,
+        audioStreamSource: 'kugou',
+        album: track.album || "",
+        lyrics: [],
+        needsLyricsMatch: false,
+      };
+      onImportAndPlay(song);
+    } catch (error) {
+      console.error("Failed to play KuGou track:", error);
+    }
+  };
+
+  const addKugouToQueue = async (track: KugouTrack) => {
+    if (search.isResultInQueue(track)) {
+      return;
+    }
+
+    try {
+      const { getKugouSongUrl } = await import("../../services/music/kugouApi");
+      const audioUrl = await getKugouSongUrl(track.hash);
+      
+      const song: Song = {
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+        coverUrl: track.coverUrl || "",
+        fileUrl: audioUrl || "",
+        isAudioStream: true,
+        audioStreamSource: 'kugou',
+        album: track.album || "",
+        lyrics: [],
+        needsLyricsMatch: false,
+      };
+      onAddToQueue(song);
+    } catch (error) {
+      console.error("Failed to add KuGou track to queue:", error);
+    }
+  };
+
+  const playAlbumSongs = async (album: { id: number; name: string; artist: { name: string }; picUrl?: string }) => {
+    try {
+      const { getAlbumDetail } = await import("../../services/music/neteaseApi");
+      const result = await getAlbumDetail(album.id);
+      const firstSong = result.songs[0];
+      if (firstSong) {
+        const song: Song = {
+          id: firstSong.id,
+          title: firstSong.name,
+          artist: firstSong.artists.map(a => a.name).join(", "),
+          coverUrl: album.picUrl?.replace("http:", "https:"),
+          fileUrl: getNeteaseAudioUrl(firstSong.id),
+          isNetease: true,
+          neteaseId: firstSong.id.toString(),
+          album: album.name,
+          lyrics: [],
+          needsLyricsMatch: true,
+        };
+        onImportAndPlay(song);
+      }
+    } catch (err) {
+      console.error("Failed to play album:", err);
+    }
+  };
+
+  const handleLanguageSelection = (idx: number) => {
+    const track = search.languageResults[idx];
+    if (track) {
+      const song: Song = {
+        id: track.id,
+        title: track.name,
+        artist: track.artists?.map(a => a.name).join(", ") || "",
+        coverUrl: track.album?.picUrl?.replace("http:", "https:"),
+        fileUrl: getNeteaseAudioUrl(track.id),
+        isNetease: true,
+        neteaseId: track.id.toString(),
+        album: track.album?.name,
+        lyrics: [],
+        needsLyricsMatch: true,
+      };
+      onImportAndPlay(song);
+    }
+  };
 
 
   const handleMenuClick = (e: React.MouseEvent, trackId: string) => {
@@ -426,8 +526,12 @@ const SearchModal: React.FC<SearchModalProps> = ({
                   search.activeTab === "queue"
                     ? t("search.filterQueue")
                     : search.onlineSource === "netease"
-                      ? t("search.searchCloudMusic") || "搜索网易云音乐"
-                      : t("search.searchInternetArchive") || "搜索 Internet Archive"
+                      ? t("search.netease") || "流媒体"
+                      : search.onlineSource === "album"
+                        ? t("search.album") || "专辑"
+                        : search.onlineSource === "language"
+                          ? t("search.language") || "语言"
+                          : t("search.archive") || "Archive"
                 }
                 className="
                           w-full pl-12 pr-4 py-3.5
@@ -453,6 +557,24 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     }`}
                 >
                   {t("search.netease")}
+                </button>
+                <button
+                  onClick={() => search.setOnlineSource("album")}
+                  className={`px-3 sm:px-4 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${search.onlineSource === "album"
+                    ? "bg-white/15 text-white shadow-sm"
+                    : "text-white/40 hover:text-white/60"
+                    }`}
+                >
+                  {t("search.album")}
+                </button>
+                <button
+                  onClick={() => search.setOnlineSource("language")}
+                  className={`px-3 sm:px-4 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${search.onlineSource === "language"
+                    ? "bg-white/15 text-white shadow-sm"
+                    : "text-white/40 hover:text-white/60"
+                    }`}
+                >
+                  {t("search.language")}
                 </button>
                 <button
                   onClick={() => search.setOnlineSource("archive")}
@@ -712,9 +834,9 @@ const SearchModal: React.FC<SearchModalProps> = ({
                                     ? "border-white/30 text-white/80 bg-white/20"
                                     : "border-white/10 text-white/30 bg-white/5"
                                   }
-                                            `}
+                                `}
                               >
-                                Cloud
+                                {search.onlineSource === "netease" ? "流媒体" : search.onlineSource === "album" ? "专辑" : "语种"}
                               </span>
                             </div>
                           </div>
@@ -734,6 +856,105 @@ const SearchModal: React.FC<SearchModalProps> = ({
                         </div>
                       )}
                     </>
+                  )}
+                </>
+              )}
+
+              {/* Album Provider UI */}
+              {search.onlineSource === "album" && (
+                <>
+                  {search.albumHasSearched && search.albumResults.length === 0 && !search.albumIsLoading && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <span className="text-base font-medium">{t("search.noMatchesFound")}</span>
+                    </div>
+                  )}
+                  {search.albumIsLoading && search.albumResults.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
+                      <span className="text-base font-medium">{t("search.searching")}</span>
+                    </div>
+                  )}
+                  {!search.albumHasSearched && search.albumResults.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <span className="text-base font-medium">{t("search.searchAlbum")}</span>
+                    </div>
+                  )}
+                  {search.albumResults.length > 0 && (
+                    <div className="flex flex-col gap-1">
+                      {search.albumResults.map((album, idx) => (
+                        <div
+                          key={album.id}
+                          className="flex items-center gap-3 p-3 rounded-[10px] hover:bg-white/5 cursor-pointer"
+                          onClick={() => playAlbumSongs(album)}
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-white/10 overflow-hidden">
+                            <SmartImage
+                              src={album.picUrl?.replace("http:", "https:")}
+                              alt={album.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-white/90 truncate">{album.name}</div>
+                            <div className="text-xs text-white/40 truncate">{album.artist.name}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {search.albumIsLoading && (
+                        <div className="py-6 flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Language Provider UI */}
+              {search.onlineSource === "language" && (
+                <>
+                  {search.languageHasSearched && search.languageResults.length === 0 && !search.languageIsLoading && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <span className="text-base font-medium">{t("search.noMatchesFound")}</span>
+                    </div>
+                  )}
+                  {search.languageIsLoading && search.languageResults.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
+                      <span className="text-base font-medium">{t("search.searching")}</span>
+                    </div>
+                  )}
+                  {!search.languageHasSearched && search.languageResults.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
+                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <span className="text-base font-medium">{t("search.searchLanguage")}</span>
+                    </div>
+                  )}
+                  {search.languageResults.length > 0 && (
+                    <div className="flex flex-col gap-1">
+                      {search.languageResults.map((track, idx) => (
+                        <div
+                          key={track.id}
+                          className="flex items-center gap-3 p-3 rounded-[10px] hover:bg-white/5 cursor-pointer"
+                          onClick={() => handleLanguageSelection(idx)}
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-white/10 overflow-hidden">
+                            <SmartImage
+                              src={track.album?.picUrl?.replace("http:", "https:")}
+                              alt={track.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-white/90 truncate">{track.name}</div>
+                            <div className="text-xs text-white/40 truncate">{track.artists?.map(a => a.name).join(", ")}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </>
               )}
@@ -896,6 +1117,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     playArchiveTrack(
                       search.contextMenu!.track as StreamingTrack,
                     );
+                  } else if (search.contextMenu!.type === "kugou") {
+                    playKugouTrack(
+                      search.contextMenu!.track as KugouTrack,
+                    );
                   }
                   search.closeContextMenu();
                   onClose();
@@ -928,6 +1153,22 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     e.stopPropagation();
                     addArchiveToQueue(
                       search.contextMenu!.track as StreamingTrack,
+                    );
+                    search.closeContextMenu();
+                  }}
+                  disabled={search.isResultInQueue(search.contextMenu.track)}
+                  className="flex items-center gap-3 px-3 py-2 text-left text-[13px] text-white/90 hover:bg-blue-500 hover:text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  {t("search.addToQueue")}
+                </button>
+              )}
+              {search.contextMenu.type === "kugou" && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addKugouToQueue(
+                      search.contextMenu!.track as KugouTrack,
                     );
                     search.closeContextMenu();
                   }}

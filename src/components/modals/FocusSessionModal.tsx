@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTransition, animated } from '@react-spring/web';
-import { CheckIcon, CloseIcon, ClockIcon, PauseIcon, PlayIcon } from '../common/Icons';
+import { CheckIcon, CloseIcon, PauseIcon, PlayIcon } from '../common/Icons';
 import { useI18n } from '../../contexts/I18nContext';
 
 interface FocusSessionModalProps {
@@ -36,7 +36,6 @@ const FocusSessionModal: React.FC<FocusSessionModalProps> = ({
   const [customMinutes, setCustomMinutes] = useState(30);
   const [customSeconds, setCustomSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -169,7 +168,6 @@ const FocusSessionModal: React.FC<FocusSessionModalProps> = ({
     }
   };
 
-  const progress = ((selectedDuration - timeRemaining) / selectedDuration) * 100;
 
   const overlayTransition = useTransition(isOpen, {
     from: { opacity: 0 },
@@ -205,23 +203,11 @@ const FocusSessionModal: React.FC<FocusSessionModalProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative w-full max-w-sm p-5 rounded-2xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]">
-              {/* Header with accent glow */}
+              {/* Header */}
               <div className="text-center mb-5">
-                <div className="relative inline-flex">
-                  <div className="absolute inset-0 bg-violet-500/20 blur-xl rounded-full" />
-                  <div className="relative w-14 h-14 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center mb-3">
-                    <ClockIcon className="w-6 h-6 text-white/80" />
-                  </div>
-                </div>
                 <h2 className="text-lg font-semibold text-white">
                   {t('focus.session') || '专注模式'}
                 </h2>
-                <p className="text-xs text-white/40 mt-1">
-                  {isRunning 
-                    ? (isPaused ? t('focus.paused') || '已暂停' : t('focus.active') || '进行中')
-                    : t('focus.hint') || '选择时长开始专注'
-                  }
-                </p>
               </div>
 
               {/* Timer Display with glow */}
@@ -235,18 +221,6 @@ const FocusSessionModal: React.FC<FocusSessionModalProps> = ({
                 </div>
                 <div className="text-sm text-white/50 mt-2">
                   {formatTimeDisplay(timeRemaining)}
-                </div>
-
-                {/* Progress Bar with glow */}
-                <div className="relative mt-4 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="absolute inset-0 bg-white/5 rounded-full" />
-                  <animated.div
-                    ref={progressBarRef}
-                    className="absolute inset-y-0 left-0 rounded-full bg-white/60 transition-all duration-1000 ease-linear"
-                    style={{ 
-                      width: `${progress}%`,
-                    }}
-                  />
                 </div>
               </div>
 

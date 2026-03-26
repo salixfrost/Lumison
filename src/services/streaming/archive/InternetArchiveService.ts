@@ -3,6 +3,8 @@
  * Utility functions for searching and fetching audio from archive.org
  */
 
+import { fetchViaProxy } from "../../../services/utils";
+
 export interface ArchiveSearchOptions {
   query: string;
   collection?: string;
@@ -61,13 +63,7 @@ export async function searchArchive(options: ArchiveSearchOptions): Promise<Arch
   searchUrl.searchParams.set('page', page.toString());
   searchUrl.searchParams.set('output', 'json');
 
-  const response = await fetch(searchUrl.toString());
-
-  if (!response.ok) {
-    throw new Error(`Archive search failed: ${response.statusText}`);
-  }
-
-  const data = await response.json();
+  const data = await fetchViaProxy(searchUrl.toString());
   const docs = data.response?.docs || [];
 
   return docs.map((doc: any) => ({
@@ -86,13 +82,7 @@ export async function searchArchive(options: ArchiveSearchOptions): Promise<Arch
 export async function fetchArchiveMetadata(identifier: string): Promise<ArchiveMetadata | null> {
   try {
     const metadataUrl = `https://archive.org/metadata/${identifier}`;
-    const response = await fetch(metadataUrl);
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
+    const data = await fetchViaProxy(metadataUrl);
 
     if (!data.files) {
       return null;

@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useEffect } from 'react';
-import { useSpring, animated } from '@react-spring/web';
+import { useTransition, animated } from '@react-spring/web';
 import SmartImage from '../../common/SmartImage';
 import { useI18n } from '../../../contexts/I18nContext';
 import { MoreVerticalIcon, QueueIcon } from '../../common/Icons';
@@ -7,6 +7,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 
 interface CoverCardProps {
   coverUrl?: string;
+  blurhash?: string | null;
   isPlaying: boolean;
   showSettingsPopup?: boolean;
   setShowSettingsPopup?: (show: boolean) => void;
@@ -20,6 +21,7 @@ interface CoverCardProps {
 
 const CoverCard: React.FC<CoverCardProps> = ({
   coverUrl,
+  blurhash,
   isPlaying,
   showSettingsPopup = false,
   setShowSettingsPopup,
@@ -35,6 +37,14 @@ const CoverCard: React.FC<CoverCardProps> = ({
   const settingsContainerRef = useRef<HTMLDivElement>(null);
 
   const displayCover = coverUrl;
+
+  // Settings popup animation - same as playlist popup
+  const settingsTransitions = useTransition(showSettingsPopup, {
+    from: { opacity: 0, transform: 'translateY(-20px) scale(0.95)' },
+    enter: { opacity: 1, transform: 'translateY(0px) scale(1)' },
+    leave: { opacity: 0, transform: 'translateY(-20px) scale(0.95)' },
+    config: { tension: 280, friction: 24 },
+  });
 
   // Close settings popup when clicking outside
   useEffect(() => {
@@ -56,9 +66,10 @@ const CoverCard: React.FC<CoverCardProps> = ({
     <div className="mb-3 w-full max-w-xl">
       {/* Only show cover when coverUrl exists */}
       {displayCover && (
-        <div className="relative aspect-square w-56 md:w-60 lg:w-64 mx-auto rounded-[4px] bg-black overflow-hidden shadow-lg">
+        <div className="relative aspect-square w-72 md:w-80 lg:w-96 mx-auto rounded-[4px] bg-black overflow-hidden shadow-lg">
           <SmartImage
             src={displayCover}
+            blurhash={blurhash}
             alt="Album Art"
             containerClassName="absolute inset-0"
             imgClassName="w-full h-full object-cover"
@@ -68,7 +79,7 @@ const CoverCard: React.FC<CoverCardProps> = ({
       )}
 
       {/* Song Info and Actions Row - Below Cover */}
-      <div className="w-56 md:w-60 lg:w-64 mx-auto mt-3 flex items-center justify-between gap-3">
+      <div className="w-72 md:w-80 lg:w-96 mx-auto mt-3 flex items-center justify-between gap-3">
         {/* Song Info - Center */}
         <div className="flex-1 min-w-0 text-left">
           <h3 className="text-lg font-bold tracking-tight truncate leading-tight theme-text-primary">
@@ -110,7 +121,17 @@ const CoverCard: React.FC<CoverCardProps> = ({
               </button>
 
               {/* Settings Popup */}
-              {showSettingsPopup && settingsPopupContent}
+              {settingsTransitions((style, item) =>
+                item && settingsPopupContent ? (
+                  <animated.div
+                    style={style}
+                    className="absolute right-0 top-full mt-2 z-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {settingsPopupContent}
+                  </animated.div>
+                ) : null
+              )}
             </div>
           )}
         </div>

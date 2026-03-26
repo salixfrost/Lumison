@@ -25,6 +25,20 @@ const CHINESE_METADATA_INDICATORS = [
 ];
 
 /**
+ * Combined metadata keywords for lyricsService.ts
+ */
+export const METADATA_KEYWORDS = [
+  ...METADATA_INDICATORS,
+  ...CHINESE_METADATA_INDICATORS,
+  "lyricist",
+  "composer",
+  "arrange",
+  "translation",
+  "translator",
+  "producer",
+];
+
+/**
  * Check if the given text is a metadata line.
  */
 export const isMetadataLine = (text: string): boolean => {

@@ -71,15 +71,33 @@ export const usePlayer = ({
   const [duration, setDuration] = useState(0);
   const [playMode, setPlayMode] = useState<PlayMode>(PlayMode.LOOP_ALL);
   const [matchStatus, setMatchStatus] = useState<MatchStatus>("idle");
-  const audioRef = useRef<HTMLAudioElement>(null);  const isSeekingRef = useRef(false);
-  const originalQueueIndexMap = useMemo(
-    () => buildSongIdIndexMap(originalQueue),
-    [originalQueue],
-  );
-  const originalQueueById = useMemo(
-    () => buildSongIdMap(originalQueue),
-    [originalQueue],
-  );
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const isSeekingRef = useRef(false);
+  
+  // 缓存索引映射 - O(1) 查找
+  const indexMapRef = useRef<Map<string, number>>(new Map());
+  const originalIndexMapRef = useRef<Map<string, number>>(new Map());
+  
+  // 维护 shuffle 顺序的索引数组，而非重建队列
+  const shuffleOrderRef = useRef<number[]>([]);
+  const currentShufflePositionRef = useRef(-1);
+
+  // 构建索引映射 - 依赖 queue 和 originalQueue 变化时重建
+  useEffect(() => {
+    const map = new Map<string, number>();
+    queue.forEach((song, index) => {
+      map.set(song.id, index);
+    });
+    indexMapRef.current = map;
+  }, [queue]);
+
+  useEffect(() => {
+    const map = new Map<string, number>();
+    originalQueue.forEach((song, index) => {
+      map.set(song.id, index);
+    });
+    originalIndexMapRef.current = map;
+  }, [originalQueue]);
 
   const pauseAndResetCurrentAudio = useCallback(() => {
     if (!audioRef.current) return;
@@ -114,26 +132,35 @@ export const usePlayer = ({
 
   const reorderForShuffle = useCallback(() => {
     if (originalQueue.length === 0) return;
-    const currentId = currentSong?.id;
-    const pool = originalQueue.filter((song) => song.id !== currentId);
-    const shuffled = shuffleArray([...pool]);
-    if (currentId) {
-      const current = originalQueueById.get(currentId);
-      if (current) {
-        setQueue([current, ...shuffled]);
-        setCurrentIndex(0);
-        return;
+    
+    // 生成 shuffle 顺序索引数组
+    const indices = originalQueue.map((_, i) => i);
+    const shuffled = shuffleArray(indices);
+    
+    shuffleOrderRef.current = shuffled;
+    
+    // 找到当前歌曲在 originalQueue 中的位置
+    if (currentSong) {
+      const currentOriginalIndex = originalIndexMapRef.current.get(currentSong.id);
+      if (currentOriginalIndex !== undefined) {
+        const shufflePos = shuffled.indexOf(currentOriginalIndex);
+        currentShufflePositionRef.current = shufflePos;
       }
+    } else {
+      currentShufflePositionRef.current = 0;
     }
-    setQueue(shuffled);
-    setCurrentIndex(0);
-  }, [currentSong, originalQueue, originalQueueById, setQueue]);
+  }, [originalQueue, currentSong]);
 
-  const toggleMode = useCallback(() => {
+  const toggleMode = useCallback((mode?: PlayMode) => {
     let nextMode: PlayMode;
-    if (playMode === PlayMode.LOOP_ALL) nextMode = PlayMode.LOOP_ONE;
-    else if (playMode === PlayMode.LOOP_ONE) nextMode = PlayMode.SHUFFLE;
-    else nextMode = PlayMode.LOOP_ALL;
+    
+    if (mode !== undefined) {
+      nextMode = mode;
+    } else {
+      if (playMode === PlayMode.LOOP_ALL) nextMode = PlayMode.LOOP_ONE;
+      else if (playMode === PlayMode.LOOP_ONE) nextMode = PlayMode.SHUFFLE;
+      else nextMode = PlayMode.LOOP_ALL;
+    }
 
     setPlayMode(nextMode);
     setMatchStatus("idle");
@@ -141,15 +168,15 @@ export const usePlayer = ({
     if (nextMode === PlayMode.SHUFFLE) {
       reorderForShuffle();
     } else {
-      setQueue(originalQueue);
+      // 退出 shuffle 模式时，通过索引映射恢复位置
       if (currentSong) {
-        const idx = originalQueueIndexMap.get(currentSong.id) ?? -1;
-        setCurrentIndex(idx !== -1 ? idx : 0);
+        const idx = originalIndexMapRef.current.get(currentSong.id) ?? 0;
+        setCurrentIndex(idx);
       } else {
         setCurrentIndex(originalQueue.length > 0 ? 0 : -1);
       }
     }
-  }, [playMode, reorderForShuffle, originalQueue, currentSong, setQueue, originalQueueIndexMap]);
+  }, [playMode, reorderForShuffle, originalQueue, currentSong]);
 
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
@@ -232,15 +259,36 @@ export const usePlayer = ({
       return;
     }
 
+    // SHUFFLE 模式：使用 shuffle 顺序数组
+    if (playMode === PlayMode.SHUFFLE && shuffleOrderRef.current.length > 0) {
+      const nextPos = (currentShufflePositionRef.current + 1) % shuffleOrderRef.current.length;
+      const nextOriginalIndex = shuffleOrderRef.current[nextPos];
+      currentShufflePositionRef.current = nextPos;
+      switchToIndexAndPlay(nextOriginalIndex);
+      return;
+    }
+
+    // NORMAL/LOOP_ALL 模式：顺序播放
     const next = (currentIndex + 1) % queue.length;
     switchToIndexAndPlay(next);
   }, [queue.length, playMode, currentIndex, switchToIndexAndPlay, tryPlayAudio]);
 
   const playPrev = useCallback(() => {
     if (queue.length === 0) return;
+
+    // SHUFFLE 模式：使用 shuffle 顺序数组
+    if (playMode === PlayMode.SHUFFLE && shuffleOrderRef.current.length > 0) {
+      const prevPos = (currentShufflePositionRef.current - 1 + shuffleOrderRef.current.length) % shuffleOrderRef.current.length;
+      const prevOriginalIndex = shuffleOrderRef.current[prevPos];
+      currentShufflePositionRef.current = prevPos;
+      switchToIndexAndPlay(prevOriginalIndex);
+      return;
+    }
+
+    // NORMAL/LOOP_ALL 模式：顺序播放
     const prev = (currentIndex - 1 + queue.length) % queue.length;
     switchToIndexAndPlay(prev);
-  }, [queue.length, currentIndex, switchToIndexAndPlay]);
+  }, [queue.length, playMode, currentIndex, switchToIndexAndPlay]);
 
   const playIndex = useCallback(
     (index: number) => {
@@ -270,6 +318,8 @@ export const usePlayer = ({
 
   const addSongAndPlay = useCallback(
     (song: Song) => {
+      const newOriginalIndex = originalQueue.length;
+      
       // Update both queues atomically
       setQueue((prev) => {
         const newQueue = [...prev, song];
@@ -284,24 +334,47 @@ export const usePlayer = ({
       });
 
       setOriginalQueue((prev) => [...prev, song]);
+      
+      // 如果在 shuffle 模式，将新歌曲的索引加入 shuffle 顺序
+      if (playMode === PlayMode.SHUFFLE) {
+        shuffleOrderRef.current.push(newOriginalIndex);
+      }
     },
-    [setQueue, setOriginalQueue],
+    [setQueue, setOriginalQueue, playMode, originalQueue.length],
   );
 
   const handlePlaylistAddition = useCallback(
     (added: Song[], wasEmpty: boolean) => {
       if (added.length === 0) return;
       setMatchStatus("idle");
+      
+      const addedCount = added.length;
+      const newStartIndex = originalQueue.length; // 原有队列长度作为起始索引
+      
       if (wasEmpty || currentIndex === -1) {
         setCurrentIndex(0);
         setPlayState(PlayState.PLAYING);
       }
+      
+      // 如果在 shuffle 模式，为新添加的歌曲生成 shuffle 索引
       if (playMode === PlayMode.SHUFFLE) {
-        reorderForShuffle();
+        const newIndices = Array.from({ length: addedCount }, (_, i) => newStartIndex + i);
+        const shuffledNewIndices = shuffleArray(newIndices);
+        shuffleOrderRef.current = [...shuffleOrderRef.current, ...shuffledNewIndices];
       }
     },
-    [currentIndex, playMode, reorderForShuffle],
+    [currentIndex, playMode, originalQueue.length],
   );
+
+  const setCurrentIndexExported = useCallback((index: number) => {
+    if (index >= 0 && index < queue.length) {
+      switchToIndexAndPlay(index);
+    }
+  }, [queue.length, switchToIndexAndPlay]);
+
+  const setPlayModeExported = useCallback((mode: PlayMode) => {
+    setPlayMode(mode);
+  }, [setPlayMode]);
 
   const mergeLyricsWithMetadata = useCallback(
     (result: { lrc: string; yrc?: string; tLrc?: string; metadata: string[] }) => {
@@ -342,6 +415,43 @@ export const usePlayer = ({
     [mergeLyricsWithMetadata],
   );
 
+  // 统一的 enrichment 函数 - 避免代码重复
+  const enrichLyricsInBackground = useCallback(
+    async (
+      songId: string,
+      lyricsCacheKey: string,
+      isNetease: boolean,
+      neteaseId?: string,
+      title?: string,
+      artist?: string,
+    ) => {
+      try {
+        const matchedLyrics = await resolveMatchedLyrics(
+          lyricsCacheKey,
+          () =>
+            withTimeout(
+              isNetease && neteaseId
+                ? fetchLyricsById(neteaseId)
+                : title && artist
+                  ? searchAndMatchLyrics(title, artist)
+                  : Promise.resolve(null),
+              MATCH_TIMEOUT_MS,
+            ),
+        );
+        if (!matchedLyrics) return;
+        const hasWordTiming = matchedLyrics.some((l) => l.words && l.words.length > 0);
+        if (hasWordTiming) {
+          updateSongInQueue(songId, { lyrics: matchedLyrics, needsLyricsMatch: false });
+        } else {
+          updateSongInQueue(songId, { needsLyricsMatch: false });
+        }
+      } catch {
+        updateSongInQueue(songId, { needsLyricsMatch: false });
+      }
+    },
+    [resolveMatchedLyrics, updateSongInQueue],
+  );
+
   useEffect(() => {
     if (!currentSong) {
       if (matchStatus !== "idle") {
@@ -350,7 +460,6 @@ export const usePlayer = ({
       return;
     }
 
-    // 静默检查歌词状态
     const songId = currentSong.id;
     const songTitle = currentSong.title;
     const songArtist = currentSong.artist;
@@ -386,32 +495,7 @@ export const usePlayer = ({
       if (!needsLyricsMatch) return;
 
       // Background enrichment — don't block or change matchStatus
-      const enrichInBackground = async () => {
-        try {
-          const matchedLyrics = await resolveMatchedLyrics(
-            lyricsCacheKey,
-            () =>
-              withTimeout(
-                isNeteaseSong && songNeteaseId
-                  ? fetchLyricsById(songNeteaseId)
-                  : searchAndMatchLyrics(songTitle, songArtist),
-                MATCH_TIMEOUT_MS,
-              ),
-          );
-          if (cancelled || !matchedLyrics) return;
-          // Only upgrade if online lyrics have word-level timing (richer than LRC)
-          const hasWordTiming = matchedLyrics.some((l) => l.words && l.words.length > 0);
-          if (hasWordTiming) {
-            updateSongInQueue(songId, { lyrics: matchedLyrics, needsLyricsMatch: false });
-          } else {
-            updateSongInQueue(songId, { needsLyricsMatch: false });
-          }
-        } catch {
-          // Silent failure — we already have good lyrics
-          updateSongInQueue(songId, { needsLyricsMatch: false });
-        }
-      };
-      enrichInBackground();
+      enrichLyricsInBackground(songId, lyricsCacheKey, isNeteaseSong, songNeteaseId, songTitle, songArtist);
       return;
     }
 
@@ -423,36 +507,12 @@ export const usePlayer = ({
 
       // Still try enrichment in background if needed
       if (needsLyricsMatch) {
-        const enrichInBackground = async () => {
-          try {
-            const matchedLyrics = await resolveMatchedLyrics(
-              lyricsCacheKey,
-              () =>
-                withTimeout(
-                  isNeteaseSong && songNeteaseId
-                    ? fetchLyricsById(songNeteaseId)
-                    : searchAndMatchLyrics(songTitle, songArtist),
-                  MATCH_TIMEOUT_MS,
-                ),
-            );
-            if (cancelled || !matchedLyrics) return;
-            const hasWordTiming = matchedLyrics.some((l) => l.words && l.words.length > 0);
-            if (hasWordTiming) {
-              updateSongInQueue(songId, { lyrics: matchedLyrics, needsLyricsMatch: false });
-            } else {
-              updateSongInQueue(songId, { needsLyricsMatch: false });
-            }
-          } catch {
-            updateSongInQueue(songId, { needsLyricsMatch: false });
-          }
-        };
-        enrichInBackground();
+        enrichLyricsInBackground(songId, lyricsCacheKey, isNeteaseSong, songNeteaseId, songTitle, songArtist);
       }
       return;
     }
 
     if (!needsLyricsMatch) {
-      console.log("⏭️ Song doesn't need lyrics matching");
       markMatchFailed();
       return;
     }
@@ -480,24 +540,18 @@ export const usePlayer = ({
           });
           markMatchSuccess();
         } else {
-          console.warn("❌ Online search failed");
           if (localLyrics.length > 0) {
-            console.log("📝 Online search failed, using LRC file as last resort fallback");
             updateSongInQueue(songId, {
               lyrics: localLyrics,
               needsLyricsMatch: false,
             });
             markMatchSuccess();
           } else {
-            console.log("❌ No LRC file available");
             markMatchFailed();
           }
         }
       } catch (error) {
-        console.error("💥 Lyrics matching error:", error);
-        // 出错时也尝试使用LRC文件
         if (localLyrics.length > 0) {
-          console.log("📝 Error occurred, using LRC file as last resort fallback");
           updateSongInQueue(songId, {
             lyrics: localLyrics,
             needsLyricsMatch: false,
@@ -518,16 +572,23 @@ export const usePlayer = ({
 
   // 预加载接下来最多5首歌的歌词
   useEffect(() => {
-    if (currentIndex < 0 || queue.length <= 1) return;
+    if (queue.length === 0) {
+      return;
+    }
+
+    const startIdx = currentIndex >= 0 ? currentIndex + 1 : 0;
+    if (startIdx >= queue.length) {
+      return;
+    }
 
     const preloadWindowSize = 5;
-    const startIdx = currentIndex + 1;
-    const endIdx = Math.min(queue.length - 1, currentIndex + preloadWindowSize);
+    const endIdx = Math.min(queue.length - 1, startIdx + preloadWindowSize - 1);
 
     const timers: number[] = [];
 
     for (let i = startIdx; i <= endIdx; i++) {
       const song = queue[i];
+      
       if (!song || !song.needsLyricsMatch || (song.lyrics && song.lyrics.length > 0)) {
         continue;
       }
@@ -557,8 +618,8 @@ export const usePlayer = ({
               needsLyricsMatch: false,
             });
           }
-        } catch (error) {
-          // 静默失败，不影响体验
+        } catch {
+          // Silent failure for preloading
         }
       }, delay);
 
@@ -566,7 +627,7 @@ export const usePlayer = ({
     }
 
     return () => timers.forEach(timer => clearTimeout(timer));
-  }, [currentIndex, queue, updateSongInQueue, resolveMatchedLyrics]);
+  }, [currentIndex, queue, queue.length, updateSongInQueue, resolveMatchedLyrics]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -646,20 +707,18 @@ export const usePlayer = ({
     }
 
     // 强制重新提取颜色以应用新的3色方案
-    // 检查是否已经是3色方案（新方案）
+    // 检查是否已经是4色方案
     const hasOldColorScheme = currentSong.colors && currentSong.colors.length !== 4;
     const needsExtraction = !currentSong.colors || hasOldColorScheme;
 
     if (needsExtraction) {
-      console.log('[Color Extraction] Extracting colors for:', currentSong.title);
       extractColors(currentSong.coverUrl)
         .then((colors) => {
-          console.log('[Color Extraction] Extracted colors:', colors);
           if (colors.length > 0) {
             updateSongInQueue(currentSong.id, { colors });
           }
         })
-        .catch((err) => console.warn("Color extraction failed", err));
+        .catch(() => {});
     }
   }, [currentSong, updateSongInQueue]);
 
@@ -898,11 +957,13 @@ export const usePlayer = ({
     setSpeed: handleSetSpeed,
     togglePreservesPitch: handleTogglePreservesPitch,
     pitch: 0,
-    setPitch: (_pitch: number) => { }, // Pitch adjustment requires Web Audio API integration; not yet implemented
+    setPitch: (_pitch: number) => { },
     play,
     pause,
     resolvedAudioSrc,
     isBuffering,
     bufferProgress,
+    setCurrentIndex: setCurrentIndexExported,
+    setPlayMode: setPlayModeExported,
   };
 };

@@ -412,7 +412,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                                                         e.stopPropagation();
                                                         setShowInfoId(showInfoId === song.id ? null : song.id);
                                                     }}
-                                                    className="w-7 h-7 rounded-full flex items-center justify-center transition-all text-white/30 hover:text-white/70 hover:bg-white/10 opacity-0 group-hover:opacity-100 mr-1"
+                                                    className="w-7 h-7 rounded-full flex items-center justify-center transition-all text-white/50 hover:text-white/70 hover:bg-white/10 mr-1"
                                                     title={t("playlist.songInfo")}
                                                 >
                                                     <InfoIcon className="w-4 h-4" />
@@ -422,7 +422,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                                             {/* Info Popup */}
                                             {showInfoId === song.id && !isEditing && (
                                                 <div
-                                                    className="absolute left-0 right-0 top-full mt-2 z-50 mx-2 bg-black/40 backdrop-blur-2xl saturate-150 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10"
+                                                    className="absolute right-0 top-0 -mt-2 z-[100] w-64 bg-black/90 backdrop-blur-2xl saturate-150 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
                                                     <div className="flex flex-col gap-3">

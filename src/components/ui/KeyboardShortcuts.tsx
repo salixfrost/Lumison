@@ -19,6 +19,7 @@ interface KeyboardShortcutsProps {
   onSpeedChange: (speed: number) => void;
   onToggleVolumeDialog: () => void;
   onToggleSpeedDialog: () => void;
+  onToggleFullscreen?: () => void;
 }
 
 const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
@@ -37,6 +38,7 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
   onSpeedChange,
   onToggleVolumeDialog,
   onToggleSpeedDialog,
+  onToggleFullscreen,
 }) => {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
@@ -157,6 +159,21 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
           e.preventDefault();
           onToggleSpeedDialog();
           return true;
+        case "m":
+        case "M":
+          // Toggle mute
+          e.preventDefault();
+          onVolumeChange(volume === 0 ? 0.5 : 0);
+          return true;
+        case "f":
+        case "F":
+          // Toggle fullscreen
+          if (onToggleFullscreen) {
+            e.preventDefault();
+            onToggleFullscreen();
+            return true;
+          }
+          return false;
       }
 
       return false;

@@ -42,7 +42,7 @@ const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
 
             {/* Shared backdrop */}
             <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300 pointer-events-auto"
+                className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-all duration-300 hover:bg-black/25 active:bg-black/30 pointer-events-auto cursor-pointer"
                 onClick={onClose}
             />
 
@@ -69,30 +69,32 @@ const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
                     </p>
 
                     {/* Selection List */}
-                    <div className="w-full flex flex-col gap-2 mb-6">
+                    <div className="w-full flex flex-col gap-3 mb-6">
                         <button
                             onClick={(e) => openExternalLink(e as any, "https://github.com/SalixJFrost/Lumison")}
-                            className="flex items-center justify-between px-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-sm font-medium text-white/80 hover:bg-white/10 transition cursor-pointer"
+                            className="group relative flex items-center justify-between px-4 py-3.5 rounded-2xl border border-white/12 bg-white/[0.03] text-sm font-medium text-white/80 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 cursor-pointer overflow-hidden"
                         >
-                            <span>{t("about.viewOnGitHub")}</span>
-                            <span className="text-[11px] text-white/50">↗</span>
+                            <span className="relative z-10">{t("about.viewOnGitHub")}</span>
+                            <span className="relative z-10 text-[11px] text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all duration-300">↗</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         </button>
 
                         <button
                             onClick={(e) => openExternalLink(e as any, "https://github.com/salixfrost")}
-                            className="flex items-center justify-between px-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-sm font-medium text-white/80 hover:bg-white/10 transition cursor-pointer"
+                            className="group relative flex items-center justify-between px-4 py-3.5 rounded-2xl border border-white/12 bg-white/[0.03] text-sm font-medium text-white/80 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 cursor-pointer overflow-hidden"
                         >
-                            <span>{t("about.createdBy")}</span>
-                            <span className="text-[11px] text-white/50">↗</span>
+                            <span className="relative z-10">{t("about.createdBy")}</span>
+                            <span className="relative z-10 text-[11px] text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all duration-300">↗</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         </button>
                     </div>
                 </div>
 
                 {/* Footer / Close */}
-                <div className="border-t border-white/10 bg-white/5 p-2">
+                <div className="border-t border-white/10 bg-white/[0.02] p-2">
                     <button
                         onClick={onClose}
-                        className="w-full py-3.5 rounded-2xl text-[16px] font-semibold text-white/90 hover:bg-white/10 active:scale-[0.98] transition-all duration-200"
+                        className="group w-full py-3.5 rounded-2xl text-[16px] font-semibold text-white/70 hover:text-white/90 hover:bg-white/[0.06] active:bg-white/[0.10] active:scale-[0.98] transition-all duration-200"
                     >
                         {t("common.done")}
                     </button>

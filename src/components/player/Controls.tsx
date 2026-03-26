@@ -25,6 +25,7 @@ import {
 import { PlayMode } from "../../types";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useI18n } from "../../contexts/I18nContext";
+import { VISUAL_MODE_LABELS, onVisualModeChange } from "../layout/ShaderBackground";
 
 // Cache one spatial engine per audio element to avoid duplicate MediaElementSource creation.
 const spatialEngineCache = new WeakMap<HTMLAudioElement, SpatialAudioEngine>();
@@ -52,14 +53,12 @@ interface ControlsProps {
   onSpeedChange: (speed: number) => void;
   onTogglePreservesPitch: () => void;
   coverUrl?: string;
+  coverBlurhash?: string | null;
   showVolumePopup: boolean;
   setShowVolumePopup: (show: boolean) => void;
   showSettingsPopup: boolean;
   setShowSettingsPopup: (show: boolean) => void;
   isBuffering: boolean;
-  onImportFiles?: (files: FileList) => void;
-  onImportUrl?: (url: string) => Promise<boolean>;
-  onOpenImportDialog?: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -85,14 +84,12 @@ const Controls: React.FC<ControlsProps> = ({
   onSpeedChange,
   onTogglePreservesPitch,
   coverUrl,
+  coverBlurhash,
   showVolumePopup,
   setShowVolumePopup,
   showSettingsPopup,
   setShowSettingsPopup,
   isBuffering,
-  onImportFiles,
-  onImportUrl,
-  onOpenImportDialog,
 }) => {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -356,6 +353,7 @@ const Controls: React.FC<ControlsProps> = ({
       {/* Cover Section with 3D Effect */}
       <CoverCard
         coverUrl={coverUrl}
+        blurhash={coverBlurhash}
         isPlaying={isPlaying}
         showSettingsPopup={showSettingsPopup}
         setShowSettingsPopup={setShowSettingsPopup}
@@ -375,19 +373,15 @@ const Controls: React.FC<ControlsProps> = ({
                 volume={volume}
                 onVolumeChange={onVolumeChange}
                 getVolumeButtonIcon={getVolumeButtonIcon}
-                onImportFiles={onImportFiles}
-                onImportUrl={onImportUrl}
-                onOpenImportDialog={onOpenImportDialog}
+                onVisualModeChange={onVisualModeChange}
               />
             ) : null
           )
         }
       />
 
-      {/* Spectrum Visualizer - Moved to bottom */}
-
       {/* Progress Bar */}
-      <div className="w-full max-w-[780px] flex items-center gap-3 text-sm font-medium theme-text-secondary group/bar relative">
+      <div className="w-full max-w-[520px] flex items-center gap-3 text-sm font-medium theme-text-secondary group/bar relative">
         <span className="w-12 text-right font-mono tracking-wide">
           {formatTime(displayTime)}
         </span>
@@ -553,9 +547,6 @@ interface SettingsPopupProps {
   volume: number;
   onVolumeChange: (volume: number) => void;
   getVolumeButtonIcon: () => React.ReactNode;
-  onImportFiles?: (files: FileList) => void;
-  onImportUrl?: (url: string) => Promise<boolean>;
-  onOpenImportDialog?: () => void;
 }
 
 const SettingsPopup: React.FC<SettingsPopupProps> = ({
@@ -567,17 +558,30 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
   volume,
   onVolumeChange,
   getVolumeButtonIcon,
-  onImportFiles,
-  onImportUrl,
-  onOpenImportDialog,
+  visualMode,
+  onVisualModeChange,
 }) => {
   const { t } = useI18n();
   const { theme } = useTheme();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Quick speed presets
   const speedPresets = [0.5, 0.75, 1, 1.25, 1.5, 2];
   const [showPresets, setShowPresets] = React.useState(false);
+
+  const getCurrentMode = () => {
+    if (typeof window === 'undefined') return 'gradient';
+    const stored = localStorage.getItem('lumison-visual-mode');
+    if (stored === 'melt' || stored === 'fluid' || stored === 'gradient') return stored;
+    return 'gradient';
+  };
+  const [modeRefresh, setModeRefresh] = React.useState(0);
+  const currentMode = React.useMemo(() => getCurrentMode(), [modeRefresh]);
+
+  React.useEffect(() => {
+    const handleChange = () => setModeRefresh(n => n + 1);
+    window.addEventListener('visual-mode-changed', handleChange);
+    return () => window.removeEventListener('visual-mode-changed', handleChange);
+  }, []);
 
   return (
     <animated.div
@@ -619,17 +623,58 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
           )}
         </div>
 
-        <button
-          onClick={onToggleMode}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${playMode === PlayMode.SHUFFLE
-            ? "bg-white text-black"
-            : "bg-white/20 text-white hover:bg-white/30"
-            }`}
-          title={t("player.shuffle")}
-          aria-label={t("player.shuffle")}
-        >
-          <ShuffleIcon className="w-4 h-4" />
-        </button>
+        {/* Play Mode Buttons */}
+        <div className="flex items-center gap-1">
+          {/* Loop All / Sequence */}
+          <button
+            onClick={() => onToggleMode(PlayMode.LOOP_ALL)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${playMode === PlayMode.LOOP_ALL
+              ? "bg-white text-black"
+              : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+            title={t("player.loopAll") || "顺序播放"}
+            aria-label={t("player.loopAll") || "顺序播放"}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 1l4 4-4 4" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <path d="M7 23l-4-4 4-4" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+          </button>
+
+          {/* Loop One / Repeat One */}
+          <button
+            onClick={() => onToggleMode(PlayMode.LOOP_ONE)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${playMode === PlayMode.LOOP_ONE
+              ? "bg-white text-black"
+              : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+            title={t("player.loopOne") || "单曲循环"}
+            aria-label={t("player.loopOne") || "单曲循环"}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 1l4 4-4 4" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <path d="M7 23l-4-4 4-4" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+              <text x="12" y="14" fontSize="8" textAnchor="middle" fill="currentColor" stroke="none">1</text>
+            </svg>
+          </button>
+
+          {/* Shuffle */}
+          <button
+            onClick={() => onToggleMode(PlayMode.SHUFFLE)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${playMode === PlayMode.SHUFFLE
+              ? "bg-white text-black"
+              : "bg-white/20 text-white hover:bg-white/30"
+              }`}
+            title={t("player.shuffle")}
+            aria-label={t("player.shuffle")}
+          >
+            <ShuffleIcon className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="w-full flex items-center gap-3">
@@ -665,45 +710,25 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
           />
         </div>
+      </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 ease-out active:scale-90 hover:bg-white/10 active:bg-white/20 ${theme === 'light' ? 'text-black/70 hover:text-black' : 'text-white/70 hover:text-white'}`}
-            title={t("playlist.importLocal")}
-            aria-label={t("playlist.importLocal")}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => onOpenImportDialog?.()}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 ease-out active:scale-90 hover:bg-white/10 active:bg-white/20 ${theme === 'light' ? 'text-black/70 hover:text-black' : 'text-white/70 hover:text-white'}`}
-            title={t("playlist.importUrl")}
-            aria-label={t("playlist.importUrl")}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.101-1.102" />
-            </svg>
-          </button>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-white/50">{t('settings.visual')}</span>
+        <div className="flex gap-1">
+          {(Object.keys(VISUAL_MODE_LABELS) as Array<keyof typeof VISUAL_MODE_LABELS>).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => onVisualModeChange(mode)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                currentMode === mode
+                  ? "bg-white text-black"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
+              }`}
+            >
+              {t(`visualMode.${mode}`)}
+            </button>
+          ))}
         </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="audio/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0 && onImportFiles) {
-              onImportFiles(e.target.files);
-              e.target.value = '';
-            }
-          }}
-        />
       </div>
     </animated.div>
   );

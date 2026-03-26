@@ -3,6 +3,8 @@
  * Support for stable audio sources: Internet Archive and self-hosted audio
  */
 
+import { fetchViaProxy } from "../utils";
+
 interface AudioStreamTrackInfo {
   id: string;
   title: string;
@@ -45,13 +47,7 @@ const fetchInternetArchiveAudio = async (
 ): Promise<AudioStreamTrackInfo | null> => {
   try {
     const metadataUrl = `https://archive.org/metadata/${identifier}`;
-    const response = await fetch(metadataUrl);
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch metadata');
-    }
-
-    const data = await response.json();
+    const data = await fetchViaProxy(metadataUrl);
 
     if (!data.files) {
       return null;

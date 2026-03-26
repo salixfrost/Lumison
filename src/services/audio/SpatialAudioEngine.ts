@@ -125,6 +125,13 @@ export class SpatialAudioEngine {
     
     this.ctx = audioContext || new AudioContext();
     
+    // Resume context if suspended (browser autoplay policy)
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {
+        // Will be resumed on user interaction
+      });
+    }
+    
     // Initialize default config
     this.config = {
       enabled: false,

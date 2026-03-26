@@ -1,8 +1,8 @@
-import { useCallback, useState } from "react";
-import { Song } from "../types";
+import { useCallback, useState, useEffect, useRef } from "react";
+import { Song, PlayMode } from "../types";
 import { LyricLine } from "../services/lyrics/types";
 import {
-  extractColors,
+  extractCoverData,
   parseNeteaseLink,
 } from "../services/utils";
 import {
@@ -15,6 +15,11 @@ import {
 } from "../services/music/audioStreamService";
 import { audioResourceCache } from "../services/cache";
 import { extractAudioTagData, findMatchingLRCFile, loadLRCFile } from "../services/lyrics/id3Parser";
+import {
+  saveQueueToPersistence,
+  loadQueueFromPersistence,
+  filterRestorableSongs,
+} from "../services/cache/queuePersistence";
 
 interface ImportResult {
   success: boolean;
@@ -22,9 +27,62 @@ interface ImportResult {
   songs: Song[];
 }
 
+interface RestoredQueueState {
+  queue: Song[];
+  originalQueue: Song[];
+  currentIndex: number;
+  playMode: PlayMode;
+  currentTime: number;
+}
+
 export const usePlaylist = () => {
   const [queue, setQueue] = useState<Song[]>([]);
   const [originalQueue, setOriginalQueue] = useState<Song[]>([]);
+  const [isRestored, setIsRestored] = useState(false);
+  
+  const currentIndexRef = useRef(-1);
+  const playModeRef = useRef(PlayMode.LOOP_ALL);
+  const currentTimeRef = useRef(0);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialMount = useRef(true);
+
+  const loadPersistedState = useCallback(async (): Promise<RestoredQueueState | null> => {
+    const state = await loadQueueFromPersistence();
+    if (!state || state.queue.length === 0) {
+      return null;
+    }
+
+    const { restorable, localOnly } = filterRestorableSongs(state.queue);
+    
+    if (restorable.length === 0) {
+      console.log("[Playlist] All songs were local files - cannot restore");
+      return null;
+    }
+
+    if (localOnly.length > 0) {
+      console.log(`[Playlist] Skipped ${localOnly.length} local file(s) - will need to re-add`);
+    }
+
+    console.log(`[Playlist] Restored ${restorable.length} song(s) from persistence`);
+    return {
+      queue: restorable,
+      originalQueue: filterRestorableSongs(state.originalQueue).restorable,
+      currentIndex: state.currentIndex >= 0 && state.currentIndex < restorable.length 
+        ? state.currentIndex 
+        : 0,
+      playMode: state.playMode,
+      currentTime: state.currentTime,
+    };
+  }, []);
+
+  const applyRestoredState = useCallback((state: RestoredQueueState) => {
+    setQueue(state.queue);
+    setOriginalQueue(state.originalQueue);
+    currentIndexRef.current = state.currentIndex;
+    playModeRef.current = state.playMode;
+    currentTimeRef.current = state.currentTime;
+    setIsRestored(true);
+  }, []);
 
   const updateSongInQueue = useCallback(
     (id: string, updates: Partial<Song>) => {
@@ -86,7 +144,7 @@ export const usePlaylist = () => {
         let title = basename;
         let artist = "Unknown Artist";
         let coverUrl: string | undefined;
-        let colors: string[] | undefined;
+        let blurhash: string | null | undefined;
         let lrcFileLyrics: { time: number; text: string }[] = [];
         let embeddedLyrics: { time: number; text: string }[] = [];
 
@@ -108,7 +166,8 @@ export const usePlaylist = () => {
           if (tagData.artist) artist = tagData.artist;
           if (tagData.picture) {
             coverUrl = tagData.picture;
-            colors = await extractColors(coverUrl);
+            const coverData = await extractCoverData(coverUrl);
+            blurhash = coverData.blurhash;
           }
 
           // 处理 LRC 文件
@@ -156,8 +215,8 @@ export const usePlaylist = () => {
             artist,
             fileUrl: url,
             coverUrl,
+            blurhash,
             lyrics: initialLyrics,
-            colors: colors && colors.length > 0 ? colors : undefined,
             needsLyricsMatch: needsOnlineSearch,
             localLyrics,
           };
@@ -170,8 +229,8 @@ export const usePlaylist = () => {
             artist,
             fileUrl: url,
             coverUrl,
+            blurhash,
             lyrics: [],
-            colors: colors && colors.length > 0 ? colors : undefined,
             needsLyricsMatch: true,
           };
         }
@@ -243,7 +302,7 @@ export const usePlaylist = () => {
         const { track, error } = await fetchAudioFromUrl(input);
 
         if (track) {
-          const colors = track.coverUrl ? await extractColors(track.coverUrl) : [];
+          const coverData = track.coverUrl ? await extractCoverData(track.coverUrl) : null;
 
           const newSong: Song = {
             id: track.id,
@@ -251,8 +310,8 @@ export const usePlaylist = () => {
             artist: track.artist || 'Unknown Artist',
             fileUrl: track.audioUrl,
             coverUrl: track.coverUrl,
+            blurhash: coverData?.blurhash,
             lyrics: [],
-            colors,
             needsLyricsMatch: true,
             isAudioStream: true,
             audioStreamSource: track.source,
@@ -284,14 +343,49 @@ export const usePlaylist = () => {
     [appendSongs],
   );
 
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      saveQueueToPersistence(
+        queue,
+        originalQueue,
+        currentIndexRef.current,
+        playModeRef.current,
+        currentTimeRef.current
+      );
+    }, 1000);
+  }, [queue, originalQueue]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return {
     queue,
     originalQueue,
+    isRestored,
     updateSongInQueue,
     removeSongs,
     addLocalFiles,
     importFromUrl,
     setQueue,
     setOriginalQueue,
+    loadPersistedState,
+    applyRestoredState,
+    setCurrentIndex: (index: number) => { currentIndexRef.current = index; },
+    setPlayMode: (mode: PlayMode) => { playModeRef.current = mode; },
+    setCurrentTime: (time: number) => { currentTimeRef.current = time; },
   };
 };

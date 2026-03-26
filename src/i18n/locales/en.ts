@@ -79,21 +79,20 @@ export default {
 
   // Player Controls
   player: {
+    noMusicLoaded: "No music loaded",
+    selectSong: "Select a song",
     play: "Play",
     pause: "Pause",
     next: "Next",
-    previous: "Previous",
+    prev: "Previous",
     shuffle: "Shuffle",
-    repeat: "Repeat",
-    repeatOne: "Repeat One",
+    loopAll: "Loop All",
+    loopOne: "Loop One",
     volume: "Volume",
-    speed: "Speed",
     settings: "Settings",
-    queue: "Queue",
-    lyrics: "Lyrics",
-    noMusicLoaded: "No Music Loaded",
+    speed: "Speed",
     welcomeTitle: "Welcome to Lumison",
-    selectSong: "Select a song",
+    searchHint: "Press Enter to search",
   },
 
   // Speed Settings
@@ -161,8 +160,12 @@ export default {
     searchCloudMusic: "Search Cloud Music",
     searchYouTubeMusic: "Search YouTube Music",
     searchInternetArchive: "Search Internet Archive",
+    searchAlbum: "Search Albums",
+    searchLanguage: "Search by language (English/Japanese/Korean/Chinese)",
     scrollForMore: "Scroll for more",
     moreOptions: "More options",
+    album: "Album",
+    language: "Language",
   },
 
   // Lyrics
@@ -282,6 +285,43 @@ export default {
     label: "View Mode",
     default: "Default",
     lyrics: "Lyrics",
+  },
+
+  settings: {
+    visual: "Visual",
+  },
+
+  visualMode: {
+    melt: "70s Melt",
+    fluid: "Fluid Noise",
+    gradient: "Gradient",
+  },
+
+  // Search
+  search: {
+    title: "Search",
+    placeholder: "Search songs, artists...",
+    queue: "Queue",
+    online: "Online",
+    filterQueue: "Filter queue",
+    searchCloudMusic: "Search Cloud Music",
+    searchInternetArchive: "Search Internet Archive",
+    searchAlbum: "Search Albums",
+    searchLanguage: "Search by language",
+    history: "History",
+    recent: "Recent",
+    netease: "Streaming",
+    archive: "Archive",
+    album: "Album",
+    language: "Language",
+    noSongsInQueue: "No songs in queue",
+    noMatchesFound: "No matches found",
+    searching: "Searching...",
+    moreOptions: "More options",
+    scrollForMore: "Scroll for more",
+    playNow: "Play Now",
+    playNext: "Play Next",
+    addToQueue: "Add to Queue",
   },
 
   // Update Notification

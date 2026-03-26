@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { imageResourceCache } from "../../services/cache";
 import { getStableImageKey } from "../../utils/fileHash";
+import { decodeBlurhashToDataURL, isValidBlurhash } from "../../utils/blurhash";
 
 const makeCacheKey = (src: string, width: number, height: number) => {
   const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
@@ -25,6 +26,7 @@ interface SmartImageProps
   imgClassName?: string;
   imgStyle?: CSSProperties;
   placeholder?: React.ReactNode;
+  blurhash?: string | null;
   targetWidth?: number;
   targetHeight?: number;
 }
@@ -42,6 +44,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
   imgClassName,
   imgStyle,
   placeholder,
+  blurhash,
   alt = "",
   targetWidth,
   targetHeight,
@@ -49,6 +52,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
   ...imgProps
 }) => {
   const [isVisible, setIsVisible] = useState(loading === "eager");
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [measuredSize, setMeasuredSize] = useState<{ width: number; height: number } | null>(
@@ -322,6 +326,13 @@ const SmartImage: React.FC<SmartImageProps> = ({
     };
   }, [effectiveKey, normalizedSize, resetDisplay, setFinalUrl, src, isVisible]);
 
+  const blurhashDataURL = useMemo(() => {
+    if (!isValidBlurhash(blurhash)) return null;
+    return decodeBlurhashToDataURL(blurhash, 32, 32);
+  }, [blurhash]);
+
+  const showPlaceholder = !displaySrc;
+
   return (
     <div
       ref={containerRef}
@@ -333,9 +344,26 @@ const SmartImage: React.FC<SmartImageProps> = ({
           src={displaySrc}
           alt={alt}
           className={imgClassName}
-          style={imgStyle}
+          style={{
+            ...imgStyle,
+            transition: "opacity 0.3s ease-out",
+            opacity: 1,
+          }}
           loading={loading as "lazy" | "eager"}
+          onLoad={() => setIsLoaded(true)}
           {...imgProps}
+        />
+      ) : blurhashDataURL ? (
+        <img
+          src={blurhashDataURL}
+          alt=""
+          className={imgClassName}
+          style={{
+            ...imgStyle,
+            filter: "blur(20px)",
+            transform: "scale(1.2)",
+          }}
+          aria-hidden="true"
         />
       ) : (
         placeholder ?? DEFAULT_PLACEHOLDER

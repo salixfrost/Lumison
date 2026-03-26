@@ -20,23 +20,21 @@ export interface Song {
   artist: string;
   fileUrl: string;
   coverUrl?: string;
+  blurhash?: string | null;
   lyrics?: LyricLine[];
-  colors?: string[]; // Array of dominant colors
-  needsLyricsMatch?: boolean; // Flag indicating song needs cloud lyrics matching
-  localLyrics?: LyricLine[]; // Local lyrics as fallback (embedded or .lrc file)
-  // Netease specific fields
+  colors?: string[];
+  needsLyricsMatch?: boolean;
+  localLyrics?: LyricLine[];
   isNetease?: boolean;
   neteaseId?: string;
-  // YouTube specific fields
   isYouTube?: boolean;
   youtubeId?: string;
-  // Audio stream specific fields
   isAudioStream?: boolean;
-  audioStreamSource?: 'internet-archive' | 'self-hosted';
+  audioStreamSource?: 'internet-archive' | 'self-hosted' | 'kugou';
   album?: string;
-  duration?: number; // Duration in seconds
-  viewCount?: number; // For YouTube videos
-  channelTitle?: string; // For YouTube videos
+  duration?: number;
+  viewCount?: number;
+  channelTitle?: string;
 }
 
 export enum PlayState {

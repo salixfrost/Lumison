@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { InfoIcon, FullscreenIcon, SettingsIcon, MinimizeIcon, CloseIcon, FocusSessionIcon } from "../common/Icons";
+import { InfoIcon, FullscreenIcon, SettingsIcon, MinimizeIcon, CloseIcon } from "../common/Icons";
 import AboutDialog from "../modals/AboutDialog";
 import ImportMusicDialog from "../modals/ImportMusicDialog";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
@@ -22,6 +22,7 @@ interface TopBarProps {
     coverUrl?: string;
   } | null;
   isPlaying: boolean;
+  audioElement?: HTMLAudioElement | null;
   focusSession?: {
     isActive: boolean;
     remainingTime: number;
@@ -48,6 +49,7 @@ const TopBar: React.FC<TopBarProps> = ({
   onViewModeChange,
   currentSong,
   isPlaying,
+  audioElement,
   focusSession,
   onToggleFocusSession,
 }) => {
@@ -257,6 +259,11 @@ const TopBar: React.FC<TopBarProps> = ({
 
       {/* Content */}
       <div className="relative z-10 w-full h-full px-6 flex justify-between items-center pointer-events-auto">
+        {/* Logo */}
+        <div className="flex items-center gap-2" data-tauri-drag-region>
+          <span className="text-white/90 font-bold text-lg tracking-wider">Lumison</span>
+        </div>
+
         {/* Search Bar */}
         <div
           className={`flex-1 max-w-xl mx-8 ${transitionClasses.base} ${transitionClasses.mobileActive} ${transitionClasses.hoverSupport}`}
@@ -358,18 +365,12 @@ const TopBar: React.FC<TopBarProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <FocusSessionIcon className="w-4 h-4" />
-                        <span className="text-sm">
+                        <span className="text-sm font-bold">
                           {focusSession?.isActive
                             ? `${formatFocusTime(focusSession.remainingTime)}`
                             : t("focus.start") || "开始专注"}
                         </span>
                       </div>
-                      {focusSession?.isActive && (
-                        <span className="text-xs text-white/60">
-                          {t("focus.active") || "进行中"}
-                        </span>
-                      )}
                     </button>
                   </div>
 

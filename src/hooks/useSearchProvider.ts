@@ -1,7 +1,8 @@
 import { Song } from "../types";
 import { NeteaseTrackInfo } from "../services/music/lyricsService";
+import { KugouTrack } from "../services/music/kugouApi";
 
-export type SearchResultItem = Song | NeteaseTrackInfo;
+export type SearchResultItem = Song | NeteaseTrackInfo | KugouTrack;
 
 export interface SearchProvider {
   // Unique identifier for this provider

@@ -17,6 +17,7 @@ interface AlbumModeProps {
   accentColor?: string;
   lyrics?: LyricLineType[];
   showLyrics?: boolean;
+  onExit?: () => void;
 }
 
 const AlbumMode: React.FC<AlbumModeProps> = ({
@@ -30,14 +31,43 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
   accentColor = '#ff6b6b',
   lyrics = [],
   showLyrics = false,
+  onExit,
 }) => {
   const { t } = useI18n();
   const progressBarRef = useRef<HTMLDivElement>(null);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showExitButton, setShowExitButton] = useState(true);
+  const exitButtonTimerRef = useRef<number | null>(null);
 
   const displayCover = coverUrl;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  useEffect(() => {
+    if (!showLyrics || !onExit) return;
+
+    const resetTimer = () => {
+      if (exitButtonTimerRef.current) {
+        window.clearTimeout(exitButtonTimerRef.current);
+      }
+      setShowExitButton(true);
+      exitButtonTimerRef.current = window.setTimeout(() => {
+        setShowExitButton(false);
+      }, 10000);
+    };
+
+    resetTimer();
+
+    const handleMouseMove = () => resetTimer();
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (exitButtonTimerRef.current) {
+        window.clearTimeout(exitButtonTimerRef.current);
+      }
+    };
+  }, [showLyrics, onExit]);
 
   // Find current lyric line (using binary search)
   const currentLyricIndex = useMemo(() => {
@@ -198,6 +228,18 @@ const AlbumMode: React.FC<AlbumModeProps> = ({
 
   return (
     <div className="album-mode-container">
+      {showLyrics && onExit && (
+        <button
+          onClick={onExit}
+          className={`fixed top-6 right-6 z-50 w-10 h-10 flex items-center justify-center text-white/70 hover:text-white transition-all duration-200 hover:scale-110 ${showExitButton ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          aria-label="Exit lyrics mode"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
       {showLyrics ? (
         /* Lyrics Display with word-by-word highlighting */
         <div className="lyrics-mode-wrapper">

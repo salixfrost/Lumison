@@ -168,8 +168,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({
                   )}
                   {line.translation && (
                     <div
-                      className="text-white/60 mt-2 transition-all duration-300"
-                      style={{ fontSize: `${fontSize * 0.6}px` }}
+                      className="text-white/50 mt-2 transition-all duration-300"
+                      style={{ fontSize: `${fontSize * 0.5}px` }}
                     >
                       {line.translation}
                     </div>

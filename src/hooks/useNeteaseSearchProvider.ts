@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { SearchProvider } from "./useSearchProvider";
 import {
     searchNetEase,
@@ -7,6 +7,14 @@ import {
 import { dedupeSearchResults } from "../utils/searchResultLookup";
 
 const LIMIT = 30;
+const MAX_RETRIES = 1;
+const RETRY_DELAY = 1000;
+const CACHE_TTL = 5 * 60 * 1000;
+
+interface CacheEntry {
+  data: NeteaseTrackInfo[];
+  timestamp: number;
+}
 
 interface NeteaseSearchProviderExtended extends SearchProvider {
     performSearch: (query: string) => Promise<void>;
@@ -19,6 +27,31 @@ export const useNeteaseSearchProvider = (): NeteaseSearchProviderExtended => {
     const [isLoading, setIsLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [hasSearched, setHasSearched] = useState(false);
+    const cacheRef = useRef<Map<string, CacheEntry>>(new Map());
+
+    const getCachedResults = useCallback((query: string): NeteaseTrackInfo[] | null => {
+        const entry = cacheRef.current.get(query.toLowerCase());
+        if (!entry) return null;
+
+        if (Date.now() - entry.timestamp > CACHE_TTL) {
+            cacheRef.current.delete(query.toLowerCase());
+            return null;
+        }
+
+        return entry.data;
+    }, []);
+
+    const setCachedResults = useCallback((query: string, data: NeteaseTrackInfo[]) => {
+        if (cacheRef.current.size >= 20) {
+            const firstKey = cacheRef.current.keys().next().value;
+            if (firstKey) cacheRef.current.delete(firstKey);
+        }
+
+        cacheRef.current.set(query.toLowerCase(), {
+            data,
+            timestamp: Date.now(),
+        });
+    }, []);
 
     const fetchPage = useCallback(
         async (
@@ -27,12 +60,23 @@ export const useNeteaseSearchProvider = (): NeteaseSearchProviderExtended => {
             limit: number,
             errorLabel: string,
         ): Promise<NeteaseTrackInfo[] | null> => {
-            try {
-                return await searchNetEase(query, { limit, offset });
-            } catch (e) {
-                console.error(errorLabel, e);
-                return null;
+            let lastError: Error | null = null;
+
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    return await searchNetEase(query, { limit, offset });
+                } catch (e) {
+                    lastError = e instanceof Error ? e : new Error(String(e));
+                    console.error(`${errorLabel} Attempt ${attempt + 1}:`, lastError.message);
+
+                    if (attempt < MAX_RETRIES) {
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (attempt + 1)));
+                    }
+                }
             }
+
+            console.error(errorLabel, lastError);
+            return null;
         },
         [],
     );
@@ -43,6 +87,14 @@ export const useNeteaseSearchProvider = (): NeteaseSearchProviderExtended => {
             setResults([]);
             setHasSearched(false);
             setHasMore(true);
+            return;
+        }
+
+        const cachedResults = getCachedResults(normalizedQuery);
+        if (cachedResults) {
+            setResults(dedupeSearchResults(cachedResults));
+            setHasMore(cachedResults.length >= LIMIT);
+            setHasSearched(true);
             return;
         }
 
@@ -64,10 +116,12 @@ export const useNeteaseSearchProvider = (): NeteaseSearchProviderExtended => {
             return;
         }
 
-        setResults(dedupeSearchResults(searchResults));
+        const dedupedResults = dedupeSearchResults(searchResults);
+        setCachedResults(normalizedQuery, dedupedResults);
+        setResults(dedupedResults);
         setHasMore(searchResults.length >= LIMIT);
         setIsLoading(false);
-    }, [fetchPage]);
+    }, [fetchPage, getCachedResults, setCachedResults]);
 
     const loadMore = useCallback(
         async (

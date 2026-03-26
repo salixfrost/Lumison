@@ -4,6 +4,8 @@ const DB_NAME = 'lumison_lyrics_v1';
 const STORE_NAME = 'lyrics';
 const DB_VERSION = 1;
 
+const LYRICS_CACHE_TTL_MS = 30 * 60 * 1000;
+
 let dbPromise: Promise<IDBDatabase | null> | null = null;
 
 const openDB = (): Promise<IDBDatabase | null> => {
@@ -57,9 +59,11 @@ export const getLyricsFromPersistentCache = async (
           resolve(null);
           return;
         }
-        // Validate timestamp (optional TTL)
         const now = Date.now();
-        // Keep entries indefinitely for now
+        if (entry.timestamp && now - entry.timestamp > LYRICS_CACHE_TTL_MS) {
+          resolve(null);
+          return;
+        }
         resolve(entry.lyrics as LyricLine[]);
       };
 

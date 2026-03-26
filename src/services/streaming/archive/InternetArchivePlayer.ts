@@ -3,6 +3,7 @@
  * Provides legal, DRM-free audio streaming from archive.org
  */
 
+import { fetchViaProxy } from "../../../services/utils";
 import {
   IStreamingPlayer,
   StreamingTrack,
@@ -140,13 +141,7 @@ export class InternetArchivePlayer implements IStreamingPlayer {
     searchUrl.searchParams.set('page', '1');
     searchUrl.searchParams.set('output', 'json');
 
-    const response = await fetch(searchUrl.toString());
-    
-    if (!response.ok) {
-      throw new Error('Internet Archive search failed');
-    }
-
-    const data = await response.json();
+    const data = await fetchViaProxy(searchUrl.toString());
     const docs = data.response?.docs || [];
 
     // Fetch metadata for each result to get audio URLs and cover images
@@ -180,13 +175,7 @@ export class InternetArchivePlayer implements IStreamingPlayer {
   } | null> {
     try {
       const metadataUrl = `https://archive.org/metadata/${identifier}`;
-      const response = await fetch(metadataUrl);
-      
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
+      const data = await fetchViaProxy(metadataUrl);
       
       if (!data.files) {
         return null;

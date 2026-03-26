@@ -1,7 +1,11 @@
 import { loadImageElementWithCache } from "./cache";
+import { generateBlurhash } from "../utils/blurhash";
+import { fetchJSON } from "./request";
 
-// Declare global for the script loaded in index.html
 declare const ColorThief: any;
+
+const colorCache = new Map<string, string[]>();
+const COLOR_CACHE_MAX_SIZE = 50;
 
 export const formatTime = (seconds: number): string => {
   if (isNaN(seconds)) return "0:00";
@@ -22,61 +26,15 @@ export const shuffleArray = <T>(array: T[]): T[] => {
 // Track which base URLs have confirmed CORS support to skip the proxy on subsequent calls
 const corsWorkingCache = new Set<string>();
 
-// Helper to request via CORS proxy (api.allorigins.win is reliable for GET requests)
-// Tries direct request and proxy in parallel; uses whichever responds first.
 export const fetchViaProxy = async (
   targetUrl: string,
   options?: { signal?: AbortSignal }
-): Promise<any> => {
-  // Extract base URL to check cache
-  const baseUrl = (() => { try { const u = new URL(targetUrl); return u.origin; } catch { return targetUrl; } })();
-
-  // If we know this origin works directly, skip the race and go direct
-  if (corsWorkingCache.has(baseUrl)) {
-    const response = await fetch(targetUrl, {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      mode: 'cors',
-      signal: options?.signal,
-    });
-    if (!response.ok) throw new Error(`Direct fetch failed: ${response.status}`);
-    return JSON.parse(await response.text());
-  }
-
-  // Race direct request vs proxy — use whichever wins
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-
-  const tryDirect = fetch(targetUrl, {
-    method: 'GET',
-    headers: { 'Accept': 'application/json' },
-    mode: 'cors',
+): Promise<unknown> => {
+  const result = await fetchJSON(targetUrl, {
     signal: options?.signal,
-  }).then(async (r) => {
-    if (!r.ok) throw new Error(`Direct fetch failed: ${r.status}`);
-    const data = JSON.parse(await r.text());
-    corsWorkingCache.add(baseUrl); // remember this origin works directly
-    return data;
+    timeout: 10000,
   });
-
-  const tryProxy = fetch(proxyUrl, {
-    method: 'GET',
-    headers: { 'Accept': 'application/json' },
-    signal: options?.signal,
-  }).then(async (r) => {
-    if (!r.ok) throw new Error(`Proxy fetch failed: ${r.status}`);
-    return JSON.parse(await r.text());
-  });
-
-  // any() — resolve with first success, reject only if both fail
-  return new Promise((resolve, reject) => {
-    let failures = 0;
-    const onFail = (err: unknown) => {
-      if (err instanceof Error && err.name === 'AbortError') { reject(err); return; }
-      if (++failures === 2) reject(new Error('All fetch attempts failed'));
-    };
-    tryDirect.then(resolve).catch(onFail);
-    tryProxy.then(resolve).catch(onFail);
-  });
+  return result;
 };
 
 export const parseNeteaseLink = (
@@ -110,8 +68,15 @@ export const parseNeteaseLink = (
 };
 
 export const extractColors = async (imageSrc: string): Promise<string[]> => {
+  if (!imageSrc) return [];
+
+  // 检查缓存
+  const cachedColors = colorCache.get(imageSrc);
+  if (cachedColors) {
+    return cachedColors;
+  }
+
   if (typeof ColorThief === "undefined") {
-    console.warn("ColorThief not loaded");
     return ["#4f46e5", "#db2777", "#1f2937"];
   }
 
@@ -185,11 +150,34 @@ export const extractColors = async (imageSrc: string): Promise<string[]> => {
     }
 
     // 转换为 RGB 字符串
-    return selectedColors.map((c: number[]) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`);
-  } catch (err) {
-    console.warn("Color extraction failed", err);
+    const colors = selectedColors.map((c: number[]) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`);
+    
+    // 存入缓存
+    if (colors.length > 0) {
+      if (colorCache.size >= COLOR_CACHE_MAX_SIZE) {
+        const firstKey = colorCache.keys().next().value;
+        colorCache.delete(firstKey);
+      }
+      colorCache.set(imageSrc, colors);
+    }
+    
+    return colors;
+  } catch {
     return [];
   }
+};
+
+export interface ExtractedCoverData {
+  colors: string[];
+  blurhash: string | null;
+}
+
+export const extractCoverData = async (imageSrc: string): Promise<ExtractedCoverData> => {
+  const [colors, blurhash] = await Promise.all([
+    extractColors(imageSrc),
+    generateBlurhash(imageSrc),
+  ]);
+  return { colors, blurhash };
 };
 
 /**

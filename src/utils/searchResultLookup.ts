@@ -1,8 +1,9 @@
 import { NeteaseTrackInfo } from "../services/music/lyricsService";
 import { StreamingTrack } from "../services/streaming/types";
+import { KugouTrack } from "../services/music/kugouApi";
 import { Song } from "../types";
 
-export type SearchLookupItem = Song | NeteaseTrackInfo | StreamingTrack;
+export type SearchLookupItem = Song | NeteaseTrackInfo | StreamingTrack | KugouTrack;
 
 const normalizeStreamSource = (value: string) => value.replaceAll("-", "_");
 
@@ -17,6 +18,10 @@ export const getSearchResultKey = (item: SearchLookupItem) => {
 
     if ("isAudioStream" in item && item.isAudioStream) {
         return `stream:${normalizeStreamSource(item.audioStreamSource ?? "unknown")}:${item.id}`;
+    }
+
+    if ("hash" in item && item.hash) {
+        return `kugou:${item.hash}`;
     }
 
     return `song:${item.id}`;

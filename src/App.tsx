@@ -1,6 +1,8 @@
 import React, { Suspense, lazy, useCallback, useState, useRef, useEffect, useMemo } from "react";
 import { useToast } from "./hooks/useToast";
-import ShaderBackground from "./components/layout/ShaderBackground";
+import ShaderBackground, { useVisualMode } from "./components/layout/ShaderBackground";
+import LoadingScreen from "./components/common/LoadingScreen";
+import Onboarding from "./components/common/Onboarding";
 import Controls from "./components/player/Controls";
 import LyricsView from "./components/player/LyricsView";
 import KeyboardShortcuts from "./components/ui/KeyboardShortcuts";
@@ -36,6 +38,21 @@ const App: React.FC = () => {
   const { focusSession } = usePlayerContext();
   const [showFocusSessionModal, setShowFocusSessionModal] = useState(false);
 
+  const getCurrentVisualMode = () => {
+    if (typeof window === 'undefined') return 'gradient';
+    const stored = localStorage.getItem('lumison-visual-mode');
+    if (stored === 'melt' || stored === 'fluid' || stored === 'gradient') return stored;
+    return 'gradient';
+  };
+  const [visualModeRefresh, setVisualModeRefresh] = useState(0);
+  const currentVisualMode = useMemo(() => getCurrentVisualMode(), [visualModeRefresh]);
+
+  useEffect(() => {
+    const handleVisualModeChange = () => setVisualModeRefresh(n => n + 1);
+    window.addEventListener('visual-mode-changed', handleVisualModeChange);
+    return () => window.removeEventListener('visual-mode-changed', handleVisualModeChange);
+  }, []);
+
   // Performance monitoring
   usePerformanceOptimization();
   useWebViewOptimization();
@@ -70,6 +87,18 @@ const App: React.FC = () => {
     setQueue: playlist.setQueue,
     setOriginalQueue: playlist.setOriginalQueue,
   });
+
+  useEffect(() => {
+    if (!playlist.isRestored) {
+      playlist.loadPersistedState().then((state) => {
+        if (state) {
+          playlist.applyRestoredState(state);
+          player.setCurrentIndex(state.currentIndex);
+          player.setPlayMode(state.playMode);
+        }
+      });
+    }
+  }, [playlist, player]);
 
   const {
     audioRef,
@@ -130,12 +159,24 @@ const App: React.FC = () => {
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Exit button visibility state for lyrics mode
-  const [showExitButton, setShowExitButton] = useState(true);
-  const exitButtonTimerRef = useRef<number | null>(null);
-
   // Track if user has ever played (to keep layout split after first play)
   const [hasEverPlayed, setHasEverPlayed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+
+  // Check onboarding status on mount
+  useEffect(() => {
+    const seen = localStorage.getItem("lumison-onboarding-seen");
+    setHasSeenOnboarding(seen === "true");
+  }, []);
+
+  const handleLoadingComplete = useCallback(() => {
+    setIsLoading(false);
+    if (!hasSeenOnboarding) {
+      localStorage.setItem("lumison-onboarding-seen", "true");
+    }
+  }, [hasSeenOnboarding]);
+
   const queueLookupIndexMap = useMemo(
     () => buildSongLookupIndexMap(playlist.queue),
     [playlist.queue],
@@ -183,16 +224,23 @@ const App: React.FC = () => {
   const handleViewModeChange = useCallback((mode: 'default' | 'lyrics') => {
     if (mode === 'lyrics') {
       preloadAlbumMode();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen()
+          .catch((err) => console.error('Failed to enter fullscreen:', err));
+      }
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.();
+      }
     }
     setViewMode(mode);
   }, [preloadAlbumMode]);
 
-  // Update hasEverPlayed when playing starts with lyrics
   useEffect(() => {
-    if (playState === PlayState.PLAYING && currentSong?.lyrics && currentSong.lyrics.length > 0) {
+    if (currentSong && (playState === PlayState.PLAYING || hasLoadedSong)) {
       setHasEverPlayed(true);
     }
-  }, [playState, currentSong?.lyrics]);
+  }, [playState, currentSong, hasLoadedSong]);
 
   // Optimize audio element
   useOptimizedAudio(audioRef);
@@ -221,9 +269,6 @@ const App: React.FC = () => {
       if (speedIndicatorTimerRef.current) {
         window.clearTimeout(speedIndicatorTimerRef.current);
       }
-      if (exitButtonTimerRef.current) {
-        window.clearTimeout(exitButtonTimerRef.current);
-      }
     };
   }, []);
 
@@ -236,51 +281,6 @@ const App: React.FC = () => {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
-
-  // Handle exit button auto-hide in lyrics mode
-  useEffect(() => {
-    if (viewMode !== 'lyrics') {
-      // Reset when not in lyrics mode
-      setShowExitButton(true);
-      if (exitButtonTimerRef.current) {
-        window.clearTimeout(exitButtonTimerRef.current);
-        exitButtonTimerRef.current = null;
-      }
-      return;
-    }
-
-    // Show button and start timer when entering lyrics mode
-    setShowExitButton(true);
-
-    const resetTimer = () => {
-      if (exitButtonTimerRef.current) {
-        window.clearTimeout(exitButtonTimerRef.current);
-      }
-
-      setShowExitButton(true);
-
-      exitButtonTimerRef.current = window.setTimeout(() => {
-        setShowExitButton(false);
-      }, 5000);
-    };
-
-    // Initial timer
-    resetTimer();
-
-    // Show button on mouse move
-    const handleMouseMove = () => {
-      resetTimer();
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (exitButtonTimerRef.current) {
-        window.clearTimeout(exitButtonTimerRef.current);
-      }
-    };
-  }, [viewMode]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -420,6 +420,30 @@ const App: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [preloadSearchModal]);
 
+  // Global Lyrics Mode Toggle Shortcut (L key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        handleViewModeChange(viewMode === 'lyrics' ? 'default' : 'lyrics');
+      }
+      // Exit lyrics mode on Escape key
+      if (e.key === "Escape" && viewMode === 'lyrics') {
+        e.preventDefault();
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.();
+        }
+        setViewMode('default');
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [viewMode, handleViewModeChange]);
+
   // Handle song changes (auto-play, etc)
   useEffect(() => {
     if (!currentSong || !audioRef.current) return;
@@ -467,12 +491,15 @@ const App: React.FC = () => {
   };
 
   const handleAddToQueue = (song: Song) => {
+    console.log('[App] handleAddToQueue called', { songId: song.id, title: song.title, isNetease: song.isNetease, neteaseId: song.neteaseId, needsLyricsMatch: song.needsLyricsMatch, lyricsLength: song.lyrics?.length });
     if (queueLookupIndexMap.has(getSongLookupKey(song))) {
+      console.log('[App] Song already in queue, skipping');
       return;
     }
 
     playlist.setQueue((prev) => [...prev, song]);
     playlist.setOriginalQueue((prev) => [...prev, song]);
+    console.log('[App] Song added to queue successfully');
   };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -506,15 +533,38 @@ const App: React.FC = () => {
     }
     const deltaX = endX - touchStartX;
     const threshold = 60;
+    
+    // Add momentum based on swipe velocity
     if (deltaX > threshold) {
       setActivePanel("controls");
     } else if (deltaX < -threshold) {
       setActivePanel("lyrics");
+    } else if (Math.abs(deltaX) > 10) {
+      // Small swipe - decide based on current panel
+      if (activePanel === "lyrics" && deltaX > 0) {
+        setActivePanel("controls");
+      } else if (activePanel === "controls" && deltaX < 0) {
+        setActivePanel("lyrics");
+      }
     }
+    
     setTouchStartX(null);
     setDragOffsetX(0);
     setIsDragging(false);
   };
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+        .then(() => setIsFullscreen(true))
+        .catch((err) => {
+          console.error(`Error attempting to enable fullscreen: ${err.message} (${err.name})`);
+        });
+    } else {
+      document.exitFullscreen?.()
+        .then(() => setIsFullscreen(false));
+    }
+  }, []);
 
   const handleTouchCancel = () => {
     if (isMobileLayout) {
@@ -540,7 +590,7 @@ const App: React.FC = () => {
             <p className="text-white/40 text-sm">{t("player.selectSong")}</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <label className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10">
+            <label className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
@@ -550,7 +600,7 @@ const App: React.FC = () => {
             <button
               type="button"
               onClick={handleOpenSearch}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -560,11 +610,11 @@ const App: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowImportDialog(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.101-1.102" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4 4a4 4 0 01-5.656 5.656l-1.101-1.102" />
               </svg>
               {t("playlist.importUrl")}
             </button>
@@ -599,14 +649,12 @@ const App: React.FC = () => {
             onSpeedChange={handleSpeedChange}
             onTogglePreservesPitch={player.togglePreservesPitch}
             coverUrl={currentSong?.coverUrl}
+            coverBlurhash={currentSong?.blurhash}
             isBuffering={isBuffering}
             showVolumePopup={showVolumePopup}
             setShowVolumePopup={setShowVolumePopup}
             showSettingsPopup={showSettingsPopup}
             setShowSettingsPopup={setShowSettingsPopup}
-            onImportFiles={handleFileChange}
-            onImportUrl={handleImportUrl}
-            onOpenImportDialog={() => setShowImportDialog(true)}
           />
 
           {/* Floating Playlist Panel */}
@@ -662,16 +710,27 @@ const App: React.FC = () => {
   const baseOffset = activePanel === "lyrics" ? -effectivePaneWidth : 0;
   const mobileTranslate = baseOffset + dragOffsetX;
 
+  // Show loading screen while initializing
+  if (isLoading) {
+    return <LoadingScreen onComplete={handleLoadingComplete} />;
+  }
+
+  // Show onboarding for first-time users
+  if (!hasSeenOnboarding) {
+    return <Onboarding onComplete={() => setHasSeenOnboarding(true)} />;
+  }
+
   return (
     <div className="relative w-full h-screen flex flex-col overflow-hidden theme-transition bg-black">
       <ShaderBackground
         isPlaying={playState === PlayState.PLAYING}
         colors={currentSong?.colors || []}
+        shaderMode={currentVisualMode}
       />
 
       <audio
         ref={audioRef}
-        src={resolvedAudioSrc ?? currentSong?.fileUrl}
+        src={resolvedAudioSrc && resolvedAudioSrc.trim() ? resolvedAudioSrc : (currentSong?.fileUrl && currentSong.fileUrl.trim() ? currentSong.fileUrl : undefined)}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleAudioEnded}
@@ -726,32 +785,10 @@ const App: React.FC = () => {
             coverUrl: currentSong.coverUrl,
           } : null}
           isPlaying={playState === PlayState.PLAYING}
+          audioElement={audioRef.current}
           focusSession={focusSession}
           onToggleFocusSession={() => setShowFocusSessionModal(true)}
         />
-      )}
-
-      {/* Exit Lyrics Mode Button - Only shown in lyrics mode */}
-      {viewMode === 'lyrics' && (
-        <button
-          onClick={() => setViewMode('default')}
-          className={`fixed top-6 left-6 z-50 w-10 h-10 flex items-center justify-center text-white/70 hover:text-white transition-all duration-500 group ${showExitButton ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          aria-label="Exit lyrics mode"
-        >
-          <svg
-            className="w-6 h-6 transition-transform duration-200 group-hover:scale-110"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            viewBox="0 0 24 24"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
       )}
 
       {/* Focus Session Modal */}
@@ -809,6 +846,12 @@ const App: React.FC = () => {
                 accentColor={accentColor}
                 lyrics={currentSong?.lyrics}
                 showLyrics={true}
+                onExit={() => {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen?.();
+                  }
+                  setViewMode('default');
+                }}
               />
             </Suspense>
           )}
@@ -836,7 +879,7 @@ const App: React.FC = () => {
               >
                 <div
                   className={isFullscreen ? "w-full h-full transition-transform duration-300" : "w-full h-full"}
-                  style={isFullscreen ? { transform: "scale(1.5)", transformOrigin: "center center" } : undefined}
+                  style={isFullscreen ? { transform: "scale(1.2)", transformOrigin: "center center" } : undefined}
                 >
                   {controlsSection}
                 </div>
@@ -883,7 +926,7 @@ const App: React.FC = () => {
           >
             <div
               className={isFullscreen ? 'transition-transform duration-300' : ''}
-              style={isFullscreen ? { transform: 'scale(1.5)', transformOrigin: 'center center' } : undefined}
+              style={isFullscreen ? { transform: 'scale(1.2)', transformOrigin: 'center center' } : undefined}
             >
               {controlsSection}
             </div>

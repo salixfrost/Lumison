@@ -6,26 +6,10 @@ import {
   type NeteaseTrack,
 } from "./neteaseApi";
 import { fetchNeteaseWithFallback } from "./neteaseRequest";
+import { METADATA_KEYWORDS } from "../lyrics/types";
 
 const METING_API = "https://api.qijieya.cn/meting/";
 const fetchWithFallback = fetchNeteaseWithFallback;
-
-const METADATA_KEYWORDS = [
-  "歌词贡献者",
-  "翻译贡献者",
-  "作词",
-  "作曲",
-  "编曲",
-  "制作",
-  "词曲",
-  "词 / 曲",
-  "lyricist",
-  "composer",
-  "arrange",
-  "translation",
-  "translator",
-  "producer",
-];
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -81,7 +65,7 @@ const mapNeteaseSongToTrack = (song: NeteaseApiSong): NeteaseTrackInfo => ({
   title: song.name?.trim() ?? "",
   artist: formatArtists(song.ar),
   album: song.al?.name?.trim() ?? "",
-  coverUrl: song.al?.picUrl?.replaceAll("http:", "https:"),
+  coverUrl: song.al?.picUrl?.replaceAll("http:", "https:")?.replace(/\?param=\d+y\d+$/, "") + "?param=500y500",
   duration: song.dt,
   isNetease: true,
   neteaseId: song.id.toString(),
@@ -247,12 +231,9 @@ export const searchAndMatchLyrics = async (
   artist: string,
 ): Promise<{ lrc: string; yrc?: string; tLrc?: string; metadata: string[] } | null> => {
   try {
-    // Use parallel multi-platform search with Netease-first strategy.
-    console.log("Using multi-platform lyrics search...");
     const multiPlatformResult = await multiPlatformSearch(title, artist);
 
     if (multiPlatformResult) {
-      console.log(`✓ Found lyrics from ${multiPlatformResult.source}`);
       const sourceMap: Record<string, string> = {
         'qq': 'QQ音乐',
         'kugou': '酷狗音乐',
@@ -279,7 +260,6 @@ export const searchAndMatchLyrics = async (
       };
     }
 
-    console.warn("No lyrics found on any platform");
     return null;
   } catch (error) {
     console.error("All lyrics search methods failed:", error);

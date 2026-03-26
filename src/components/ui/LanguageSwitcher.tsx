@@ -6,7 +6,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 
 interface LanguageSwitcherProps {
   className?: string;
-  variant?: 'default' | 'settings' | 'topbar'; // 新增 topbar 变体
+  variant?: 'default' | 'settings' | 'topbar';
 }
 
 const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
@@ -26,23 +26,6 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
     leave: { opacity: 0, transform: "translateY(-10px) scale(0.95)" },
     config: { tension: 300, friction: 25 },
   });
-
-  // 滚轮切换语言
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const currentIndex = locales.indexOf(locale);
-    let nextIndex: number;
-
-    if (e.deltaY > 0) {
-      // 向下滚动，切换到下一个语言
-      nextIndex = (currentIndex + 1) % locales.length;
-    } else {
-      // 向上滚动，切换到上一个语言
-      nextIndex = (currentIndex - 1 + locales.length) % locales.length;
-    }
-
-    setLocale(locales[nextIndex]);
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,7 +48,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   // TopBar 样式（紧凑圆形按钮）
   if (variant === 'topbar') {
     return (
-      <div ref={containerRef} className={`relative ${className}`} onWheel={handleWheel}>
+      <div ref={containerRef} className={`relative ${className}`}>
         <button
           onClick={() => setShowMenu(!showMenu)}
           className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${showMenu ? "text-white bg-white/20 scale-110" : "text-white/80 hover:bg-white/20 hover:text-white"
@@ -123,11 +106,11 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   // Settings 样式（在设置弹窗中使用）
   if (variant === 'settings') {
     return (
-      <div ref={containerRef} className={`relative ${className}`} onWheel={handleWheel}>
+      <div ref={containerRef} className={`relative ${className}`}>
         <button
           onClick={() => setShowMenu(!showMenu)}
           className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all"
-          title="Scroll to change language"
+          title="Click to change language"
         >
           <span className="text-sm">{t("topBar.language")}</span>
           <div className="flex items-center gap-2">
@@ -194,7 +177,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
 
   // Default 样式（原有样式）
   return (
-    <div ref={containerRef} className={`relative ${className}`} onWheel={handleWheel}>
+    <div ref={containerRef} className={`relative ${className}`}>
       <button
         onClick={() => setShowMenu(!showMenu)}
         className={`
@@ -206,7 +189,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
           }
         `}
-        title="Click to open menu, scroll to change language"
+        title="Click to change language"
       >
         <svg
           width="18"

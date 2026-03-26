@@ -12,6 +12,23 @@ use std::process::Command;
 
 #[tauri::command]
 fn open_external_url(url: String) -> Result<(), String> {
+
+#[tauri::command]
+fn write_audio_tags(options: String) -> Result<String, String> {
+    let client = reqwest::blocking::Client::new();
+    let response = client
+        .post("http://127.0.0.1:28883/tag")
+        .header("Content-Type", "application/json")
+        .body(options)
+        .send()
+        .map_err(|e| e.to_string())?;
+    
+    if response.status().is_success() {
+        Ok("OK".to_string())
+    } else {
+        Err(format!("HTTP {}", response.status()))
+    }
+}
     #[cfg(target_os = "windows")]
     {
         Command::new("cmd")
@@ -69,6 +86,7 @@ impl AppBuilder {
         tauri::Builder::default()
             .invoke_handler(tauri::generate_handler![
                 open_external_url,
+                write_audio_tags,
                 sqlite_cache::get_cached_image,
                 sqlite_cache::put_cached_image,
                 sqlite_cache::delete_cached_image,

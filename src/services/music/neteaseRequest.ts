@@ -1,72 +1,59 @@
+import { fetchWithFallback, fetchJSON, withRetry, ProxyFn } from "../request";
+
 export const NETEASE_API_ENDPOINTS = [
-  "https://music-api.heheda.top",           // primary — confirmed working, CORS supported
+  "https://music-api.heheda.top",
   "https://163api.qijieya.cn",
   "https://netease-cloud-music-api-psi-ten.vercel.app",
   "https://netease-api.fe-mm.com",
   "https://netease-music-api.vercel.app",
 ] as const;
 
+const CORS_PROXIES: ProxyFn[] = [
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+const CORS_SUPPORTED = new Set(["https://music-api.heheda.top"]);
+
 export interface NeteaseRequestConfig {
   timeout?: number;
   retries?: number;
 }
 
-// Track which endpoints are known to be down to skip them quickly
-const failedEndpoints = new Map<string, number>();
-const ENDPOINT_COOLDOWN_MS = 60_000;
-
-const isEndpointAvailable = (baseUrl: string) => {
-  const failedAt = failedEndpoints.get(baseUrl);
-  if (!failedAt) return true;
-  if (Date.now() - failedAt > ENDPOINT_COOLDOWN_MS) {
-    failedEndpoints.delete(baseUrl);
-    return true;
-  }
-  return false;
-};
-
-// Proxies used only for endpoints that don't support CORS
-const CORS_PROXIES = [
-  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-];
-
-const fetchDirect = async (url: string, signal?: AbortSignal): Promise<any> => {
+export const fetchDirect = async (url: string, signal?: AbortSignal): Promise<unknown> => {
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 };
 
-const fetchViaProxies = async (url: string, signal?: AbortSignal): Promise<any> => {
+export const fetchViaProxies = async (
+  url: string,
+  signal?: AbortSignal
+): Promise<unknown> => {
   for (const makeProxy of CORS_PROXIES) {
     try {
       const res = await fetch(makeProxy(url), { signal });
       if (!res.ok) continue;
       return await res.json();
-    } catch {
-      // try next proxy
-    }
+    } catch { continue; }
   }
   throw new Error("All proxies failed");
 };
 
-// Endpoints known to support CORS natively (no proxy needed)
-const CORS_SUPPORTED = new Set(["https://music-api.heheda.top"]);
-
 export async function fetchNeteaseWithFallback(
   endpoint: string,
   config: NeteaseRequestConfig = {},
-): Promise<any> {
-  const { timeout = 5000 } = config; // 5s per endpoint — leaves room for fallbacks within 10s total
-  const candidates = NETEASE_API_ENDPOINTS.filter(isEndpointAvailable);
-  const toTry = candidates.length > 0 ? candidates : [...NETEASE_API_ENDPOINTS];
+): Promise<unknown> {
+  const { timeout = 5000, retries = 0 } = config;
 
-  for (const baseUrl of toTry) {
+  const tryEndpoint = async (baseUrl: string) => {
     const url = endpoint.startsWith("http") ? endpoint : `${baseUrl}${endpoint}`;
+    const fetcher = CORS_SUPPORTED.has(baseUrl) ? fetchDirect : fetchViaProxies;
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
+    
     try {
-      const fetcher = CORS_SUPPORTED.has(baseUrl) ? fetchDirect : fetchViaProxies;
       const result = await fetcher(url, controller.signal);
       clearTimeout(timer);
       return result;
@@ -75,9 +62,36 @@ export async function fetchNeteaseWithFallback(
       if (error instanceof Error && error.name === "AbortError" && !controller.signal.aborted) {
         throw error;
       }
-      failedEndpoints.set(baseUrl, Date.now());
+      throw error;
+    }
+  };
+
+  if (retries > 0) {
+    for (const baseUrl of NETEASE_API_ENDPOINTS) {
+      try {
+        return await withRetry(() => tryEndpoint(baseUrl), retries);
+      } catch { continue; }
+    }
+  } else {
+    for (const baseUrl of NETEASE_API_ENDPOINTS) {
+      try {
+        return await tryEndpoint(baseUrl);
+      } catch { continue; }
     }
   }
 
   throw new Error("All Netease API endpoints failed");
 }
+
+export const fetchNetease = async <T>(
+  endpoint: string,
+  config: NeteaseRequestConfig = {}
+): Promise<T> => {
+  const { timeout = 5000, retries = 0 } = config;
+  
+  return fetchJSON<T>(endpoint, {
+    timeout,
+    retries,
+    proxies: CORS_PROXIES,
+  });
+};

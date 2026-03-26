@@ -1,6 +1,7 @@
 /**
- * Streaming Proxy Service for Bilibili Audio
+ * Streaming Proxy Service
  * Enables progressive playback without downloading entire file
+ * Supports range requests for audio streaming
  */
 
 interface StreamingConfig {
@@ -10,15 +11,11 @@ interface StreamingConfig {
 }
 
 const DEFAULT_CONFIG: StreamingConfig = {
-  chunkSize: 256 * 1024, // 256KB chunks
-  maxCacheSize: 10 * 1024 * 1024, // 10MB max cache
-  prefetchSize: 1024 * 1024, // 1MB prefetch
+  chunkSize: 256 * 1024,
+  maxCacheSize: 10 * 1024 * 1024,
+  prefetchSize: 1024 * 1024,
 };
 
-/**
- * Create a streaming blob URL that supports range requests
- * This enables progressive playback for large audio files
- */
 export class StreamingAudioProxy {
   private sourceUrl: string;
   private mediaSource: MediaSource | null = null;
@@ -34,24 +31,18 @@ export class StreamingAudioProxy {
     this.sourceUrl = sourceUrl;
   }
 
-  /**
-   * Initialize MediaSource for streaming
-   */
   async initialize(): Promise<string> {
     if (this.objectUrl) {
       return this.objectUrl;
     }
 
-    // Check if MediaSource is supported
     if (!window.MediaSource) {
       throw new Error('MediaSource API not supported');
     }
 
-    // Create MediaSource
     this.mediaSource = new MediaSource();
     this.objectUrl = URL.createObjectURL(this.mediaSource);
 
-    // Wait for MediaSource to open
     await new Promise<void>((resolve, reject) => {
       if (!this.mediaSource) {
         reject(new Error('MediaSource not initialized'));
@@ -67,13 +58,9 @@ export class StreamingAudioProxy {
       }, { once: true });
     });
 
-    // Get content type from source
     try {
       const response = await fetch(this.sourceUrl, {
         method: 'HEAD',
-        headers: {
-          'Referer': 'https://www.bilibili.com',
-        },
       });
 
       this.mimeType = response.headers.get('content-type') || 'audio/mpeg';
@@ -82,7 +69,6 @@ export class StreamingAudioProxy {
       console.warn('Failed to get content info, using defaults:', error);
     }
 
-    // Add source buffer
     if (this.mediaSource && MediaSource.isTypeSupported(this.mimeType)) {
       this.sourceBuffer = this.mediaSource.addSourceBuffer(this.mimeType);
       this.isInitialized = true;
@@ -93,14 +79,10 @@ export class StreamingAudioProxy {
     return this.objectUrl;
   }
 
-  /**
-   * Fetch and append audio chunk
-   */
   private async fetchChunk(start: number, end: number): Promise<ArrayBuffer> {
     const response = await fetch(this.sourceUrl, {
       headers: {
         'Range': `bytes=${start}-${end}`,
-        'Referer': 'https://www.bilibili.com',
       },
       signal: this.fetchController?.signal,
     });
@@ -112,9 +94,6 @@ export class StreamingAudioProxy {
     return await response.arrayBuffer();
   }
 
-  /**
-   * Start streaming audio data
-   */
   async startStreaming(onProgress?: (loaded: number, total: number) => void): Promise<void> {
     if (!this.isInitialized || !this.sourceBuffer || !this.mediaSource) {
       throw new Error('StreamingAudioProxy not initialized');
@@ -129,32 +108,27 @@ export class StreamingAudioProxy {
         const end = Math.min(offset + chunkSize - 1, this.totalSize - 1);
         const chunk = await this.fetchChunk(offset, end);
 
-        // Wait for source buffer to be ready
         if (this.sourceBuffer.updating) {
           await new Promise<void>((resolve) => {
             this.sourceBuffer!.addEventListener('updateend', () => resolve(), { once: true });
           });
         }
 
-        // Append chunk to source buffer
         this.sourceBuffer.appendBuffer(chunk);
         this.chunks.set(offset, chunk);
 
         offset = end + 1;
 
-        // Report progress
         if (onProgress) {
           onProgress(offset, this.totalSize);
         }
 
-        // Clean up old chunks to manage memory
         if (this.chunks.size * chunkSize > DEFAULT_CONFIG.maxCacheSize) {
           const oldestKey = this.chunks.keys().next().value;
           this.chunks.delete(oldestKey);
         }
       }
 
-      // End of stream
       if (this.mediaSource.readyState === 'open') {
         this.mediaSource.endOfStream();
       }
@@ -168,9 +142,6 @@ export class StreamingAudioProxy {
     }
   }
 
-  /**
-   * Stop streaming and cleanup
-   */
   stop(): void {
     if (this.fetchController) {
       this.fetchController.abort();
@@ -188,35 +159,21 @@ export class StreamingAudioProxy {
     this.isInitialized = false;
   }
 
-  /**
-   * Get current object URL
-   */
   getUrl(): string | null {
     return this.objectUrl;
   }
 
-  /**
-   * Get streaming progress
-   */
   getProgress(): { loaded: number; total: number } {
     const loaded = this.chunks.size * DEFAULT_CONFIG.chunkSize;
     return { loaded, total: this.totalSize };
   }
 }
 
-/**
- * Simple fallback: Create blob URL with progressive loading
- * This is more compatible but uses more memory
- */
 export async function createProgressiveBlob(
   url: string,
   onProgress?: (loaded: number, total: number) => void
 ): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      'Referer': 'https://www.bilibili.com',
-    },
-  });
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch audio: ${response.status}`);
@@ -255,27 +212,19 @@ export async function createProgressiveBlob(
   return URL.createObjectURL(blob);
 }
 
-/**
- * Check if streaming is supported
- */
 export function isStreamingSupported(): boolean {
   return !!(window.MediaSource && MediaSource.isTypeSupported('audio/mpeg'));
 }
 
-/**
- * Get best streaming method based on browser support
- */
 export async function getBestStreamingMethod(
   url: string,
   onProgress?: (loaded: number, total: number) => void
 ): Promise<string> {
-  // Try MediaSource streaming first (better for large files)
   if (isStreamingSupported()) {
     try {
       const proxy = new StreamingAudioProxy(url);
       const objectUrl = await proxy.initialize();
       
-      // Start streaming in background
       proxy.startStreaming(onProgress).catch((error) => {
         console.warn('Streaming failed, audio may not play completely:', error);
       });
@@ -286,6 +235,35 @@ export async function getBestStreamingMethod(
     }
   }
 
-  // Fallback to progressive blob loading
   return createProgressiveBlob(url, onProgress);
+}
+
+export const COVER_QUALITY_LEVELS = {
+  thumb: { suffix: '120', name: 'thumb' },
+  small: { suffix: '200', name: 'small' },
+  medium: { suffix: '300', name: 'medium' },
+  large: { suffix: '500', name: 'large' },
+} as const;
+
+export type CoverQuality = keyof typeof COVER_QUALITY_LEVELS;
+
+export function getCoverUrl(
+  baseUrl: string | undefined,
+  quality: CoverQuality = 'medium'
+): string | undefined {
+  if (!baseUrl) return undefined;
+  
+  const suffix = COVER_QUALITY_LEVELS[quality].suffix;
+  
+  return baseUrl.replace(/\/\d+\//, `/${suffix}/`).replace(/\?param=\d+x\d+/, `?param=${suffix}x${suffix}`);
+}
+
+export function getCoverUrlWithFallback(
+  baseUrl: string | undefined,
+  quality: CoverQuality = 'medium'
+): string | undefined {
+  const url = getCoverUrl(baseUrl, quality);
+  if (url) return url;
+  
+  return getCoverUrl(baseUrl, 'large') || baseUrl;
 }

@@ -1,4 +1,4 @@
-import { fetchViaProxy } from "../utils";
+import { fetchJSON, fetchViaProxy } from "../request";
 import { fetchNeteaseWithFallback } from "./neteaseRequest";
 
 /**
@@ -361,6 +361,30 @@ const searchThirdPartyLyricsAPIs = async (title: string, artist: string): Promis
     return null;
   };
 
+  // LrcApi - 聚合多平台（网易云、酷狗、咪咕、QQ音乐）
+  const tryLrcApi = async (): Promise<LyricsResult | null> => {
+    if (isSourceBlacklisted('lrcapi.cx')) return null;
+    try {
+      const url = `https://api.lrc.cx/lyrics?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`;
+      const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      if (data?.lyrics) {
+        return {
+          lrc: data.lyrics,
+          metadata: [],
+          source: "lrcapi.cx",
+          responseTime: Date.now() - startTime,
+        };
+      }
+    } catch (error) {
+      console.warn("LrcApi failed:", error);
+      markSourceFailed('lrcapi.cx');
+    }
+    return null;
+  };
+
   // Run all third-party providers concurrently.
   // LyricWiki/Genius/GitHub LRC were removed previously due to reliability constraints.
   const promises = [
@@ -371,6 +395,7 @@ const searchThirdPartyLyricsAPIs = async (title: string, artist: string): Promis
     tryChartLyrics(),
     tryMusixmatch(),
     tryOpenLyrics(),
+    tryLrcApi(),
   ];
 
   // Promise.any returns the first successful provider result,

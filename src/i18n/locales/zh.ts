@@ -79,21 +79,20 @@ export default {
 
   // 播放器控制
   player: {
+    noMusicLoaded: "暂无音乐",
+    selectSong: "选择一首歌曲",
     play: "播放",
     pause: "暂停",
     next: "下一首",
-    previous: "上一首",
+    prev: "上一首",
     shuffle: "随机播放",
-    repeat: "循环播放",
-    repeatOne: "单曲循环",
+    loopAll: "顺序播放",
+    loopOne: "单曲循环",
     volume: "音量",
-    speed: "倍速",
     settings: "设置",
-    queue: "播放列表",
-    lyrics: "歌词",
-    noMusicLoaded: "未加载音乐",
+    speed: "倍速",
     welcomeTitle: "欢迎使用 Lumison",
-    selectSong: "选择一首歌曲",
+    searchHint: "按下 Enter 开始搜索",
   },
 
   // 倍速设置
@@ -158,11 +157,15 @@ export default {
     noSongsInQueue: "队列中没有歌曲",
     pressEnterToSearch: "按 Enter 键搜索",
     noMatchesFound: "未找到匹配结果",
-    searchCloudMusic: "搜索网易云音乐",
+    searchCloudMusic: "搜索流媒体",
     searchYouTubeMusic: "搜索 YouTube Music",
     searchInternetArchive: "搜索 Internet Archive",
+    searchAlbum: "搜索专辑",
+    searchLanguage: "按语言搜索（欧美/日语/韩语/华语）",
     scrollForMore: "向下滚动加载更多",
     moreOptions: "更多选项",
+    album: "专辑",
+    language: "语言",
   },
 
   // 歌词
@@ -282,5 +285,42 @@ export default {
     label: "视图模式",
     default: "默认",
     lyrics: "歌词",
+  },
+
+  settings: {
+    visual: "视觉",
+  },
+
+  visualMode: {
+    melt: "70s 波动",
+    fluid: "流体噪声",
+    gradient: "渐变",
+  },
+
+  // 搜索
+  search: {
+    title: "搜索",
+    placeholder: "搜索歌曲、歌手...",
+    queue: "队列",
+    online: "在线",
+    filterQueue: "过滤播放队列",
+    searchCloudMusic: "搜索流媒体",
+    searchInternetArchive: "搜索 Internet Archive",
+    searchAlbum: "搜索专辑",
+    searchLanguage: "按语言搜索",
+    history: "历史",
+    recent: "最近搜索",
+    netease: "流媒体",
+    archive: "Archive",
+    album: "专辑",
+    language: "语言",
+    noSongsInQueue: "队列中暂无歌曲",
+    noMatchesFound: "未找到匹配结果",
+    searching: "搜索中...",
+    moreOptions: "更多选项",
+    scrollForMore: "滚动加载更多",
+    playNow: "立即播放",
+    playNext: "下一首播放",
+    addToQueue: "添加到队列",
   },
 };

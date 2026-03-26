@@ -54,3 +54,10 @@ coverage/
 # yarn.lock
 # pnpm-lock.yaml
 # bun.lock
+
+# Claude settings (local only)
+.claude/
+*.local.json
+
+# TypeScript build info
+tsconfig.tsbuildinfo
