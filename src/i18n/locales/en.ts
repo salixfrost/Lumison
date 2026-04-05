@@ -63,20 +63,6 @@ export default {
     disclaimer: "⚠️ This is NOT real Dolby Atmos. This is a simulated spatial enhancement system for immersive headphone listening.",
   },
 
-  // Focus Session
-  focus: {
-    session: "Focus Session",
-    duration: "Select Duration",
-    minutes: "min",
-    seconds: "sec",
-    start: "Start",
-    pause: "Pause",
-    resume: "Resume",
-    finish: "Finish",
-    custom: "Custom",
-    autoPause: "Auto-pause when done",
-  },
-
   // Player Controls
   player: {
     noMusicLoaded: "No music loaded",
@@ -261,7 +247,6 @@ export default {
     import: "Import",
     search: "Search",
     settings: "Settings",
-    lab: "Lab",
     theme: "Theme",
     language: "Language",
     about: "About",

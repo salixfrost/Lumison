@@ -4,7 +4,6 @@ import { InfoIcon, FullscreenIcon, SettingsIcon, MinimizeIcon, CloseIcon } from 
 import AboutDialog from "../modals/AboutDialog";
 import ImportMusicDialog from "../modals/ImportMusicDialog";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
-import FocusSessionModal from "../modals/FocusSessionModal";
 import { useI18n } from "../../contexts/I18nContext";
 import { Window } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -25,12 +24,6 @@ interface TopBarProps {
   } | null;
   isPlaying: boolean;
   audioElement?: HTMLAudioElement | null;
-  focusSession?: {
-    isActive: boolean;
-    remainingTime: number;
-    isPaused: boolean;
-  } | null;
-  onToggleFocusSession?: () => void;
 }
 
 // 常量提取到组件外部
@@ -52,15 +45,12 @@ const TopBar: React.FC<TopBarProps> = ({
   currentSong,
   isPlaying,
   audioElement,
-  focusSession,
-  onToggleFocusSession,
 }) => {
   const { t } = useI18n();
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showFocusSessionModal, setShowFocusSessionModal] = useState(false);
   const [isTopBarActive, setIsTopBarActive] = useState(false);
   const [isExhibitionMode, setIsExhibitionMode] = useState(false);
   const [aiAction, setAiAction] = useState<"generate" | "translate" | null>(null);
@@ -178,10 +168,6 @@ const TopBar: React.FC<TopBarProps> = ({
     setIsSettingsOpen(false);
   }, []);
 
-  const handleToggleFocusSession = useCallback(() => {
-    setShowFocusSessionModal(true);
-  }, []);
-
   const handleExhibitionMode = useCallback(async () => {
     try {
       if (isExhibitionMode) {
@@ -249,12 +235,6 @@ const TopBar: React.FC<TopBarProps> = ({
     } finally {
       setAiLoading(false);
     }
-  }, []);
-
-  const formatFocusTime = useCallback((seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, []);
 
   // Fullscreen change listener
@@ -427,78 +407,33 @@ const TopBar: React.FC<TopBarProps> = ({
                     </div>
                   )}
 
-                  {/* Focus Session Button */}
-                  <div className="space-y-2">
-                    <label className="text-white/70 text-xs">{t("focus.session") || "专注模式"}</label>
-                    <button
-                      onClick={handleToggleFocusSession}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] ${
-                        focusSession?.isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-white/5 text-white/80 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold">
-                          {focusSession?.isActive
-                            ? `${formatFocusTime(focusSession.remainingTime)}`
-                            : t("focus.start") || "开始专注"}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-
                   {/* Language Switcher */}
                   <LanguageSwitcher variant="settings" />
 
                   <div className="h-px bg-white/10 my-1" />
 
                   {/* Advanced Features */}
-                  <div className="space-y-2">
-                    <label className="text-white/70 text-xs">{t("topBar.lab") || "Lab"}</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={handleExhibitionMode}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${
-                          isExhibitionMode
-                            ? 'bg-white/20 text-white shadow-lg'
-                            : 'bg-white/5 text-white/80 hover:bg-white/10'
-                        }`}
-                      >
-                        {isExhibitionMode ? t("advanced.exitExhibition") : t("advanced.exhibitionMode")}
-                      </button>
-                      <button
-                        onClick={handleMultiScreen}
-                        className="px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10"
-                      >
-                        {t("advanced.multiScreen")}
-                      </button>
-                      <button
-                        onClick={handleAudioCapture}
-                        className="px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10"
-                      >
-                        {t("advanced.audioCapture")}
-                      </button>
-                      {isAIAvailable() && (
-                        <div className="col-span-2 flex gap-2">
-                          <button
-                            onClick={handleAIGenerate}
-                            disabled={aiLoading}
-                            className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10 disabled:opacity-50"
-                          >
-                            {aiLoading ? t("advanced.aiGenerating") : t("advanced.aiGenerate")}
-                          </button>
-                          <button
-                            onClick={handleAITranslate}
-                            disabled={aiLoading}
-                            className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10 disabled:opacity-50"
-                          >
-                            {aiLoading ? t("advanced.aiTranslating") : t("advanced.aiTranslate")}
-                          </button>
-                        </div>
-                      )}
+                  {isAIAvailable() && (
+                    <div className="space-y-2">
+                      <label className="text-white/70 text-xs">{t("topBar.lab") || "Lab"}</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleAIGenerate}
+                          disabled={aiLoading}
+                          className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10 disabled:opacity-50"
+                        >
+                          {aiLoading ? t("advanced.aiGenerating") : t("advanced.aiGenerate")}
+                        </button>
+                        <button
+                          onClick={handleAITranslate}
+                          disabled={aiLoading}
+                          className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10 disabled:opacity-50"
+                        >
+                          {aiLoading ? t("advanced.aiTranslating") : t("advanced.aiTranslate")}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="h-px bg-white/10 my-1" />
 
@@ -555,14 +490,6 @@ const TopBar: React.FC<TopBarProps> = ({
         isOpen={isImportDialogOpen}
         onClose={() => setIsImportDialogOpen(false)}
         onImport={onImportUrl}
-      />
-      <FocusSessionModal
-        isOpen={showFocusSessionModal}
-        onClose={() => setShowFocusSessionModal(false)}
-        onSessionComplete={() => setShowFocusSessionModal(false)}
-        isActive={focusSession?.isActive}
-        remainingTime={focusSession?.remainingTime || 1500}
-        initialDuration={focusSession?.remainingTime || 1500}
       />
     </div>
   );

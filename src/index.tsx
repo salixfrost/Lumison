@@ -5,7 +5,6 @@ import App from './App';
 import { ToastProvider } from './components/common/Toast';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { I18nProvider } from './contexts/I18nContext';
-import { PlayerProvider } from './contexts/PlayerContext';
 
 // Performance optimizations for music player
 // 1. Disable React DevTools in production
@@ -59,9 +58,7 @@ root.render(
     <I18nProvider>
       <ThemeProvider>
         <ToastProvider>
-          <PlayerProvider>
-            <App />
-          </PlayerProvider>
+          <App />
         </ToastProvider>
       </ThemeProvider>
     </I18nProvider>

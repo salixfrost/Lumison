@@ -63,20 +63,6 @@ export default {
     disclaimer: "⚠️ 这不是真正的 Dolby Atmos，这是一个模拟空间增强系统，用于沉浸式耳机聆听体验。",
   },
 
-  // 专注模式
-  focus: {
-    session: "专注模式",
-    duration: "选择时长",
-    minutes: "分钟",
-    seconds: "秒",
-    start: "开始",
-    pause: "暂停",
-    resume: "继续",
-    finish: "完成",
-    custom: "自定义",
-    autoPause: "完成后自动暂停",
-  },
-
   // 播放器控制
   player: {
     noMusicLoaded: "暂无音乐",
@@ -261,7 +247,6 @@ export default {
     import: "导入",
     search: "搜索",
     settings: "设置",
-    lab: "实验室",
     theme: "主题",
     language: "语言",
     about: "关于",

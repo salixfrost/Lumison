@@ -15,7 +15,6 @@ import { keyboardRegistry } from "./services/ui/keyboardRegistry";
 import MediaSessionController from "./components/player/MediaSessionController";
 import { useI18n } from "./contexts/I18nContext";
 import { usePlayerContext } from "./contexts/PlayerContext";
-import FocusSessionModal from "./components/modals/FocusSessionModal";
 import { getSupportedAudioFormats } from "./services/utils";
 import { usePerformanceOptimization, useOptimizedAudio } from "./hooks/usePerformanceOptimization";
 import { getPlatformConfig } from "./services/music/multiPlatformLyrics";
@@ -42,8 +41,6 @@ const LazyImportMusicDialog = lazy(importImportMusicDialog);
 const App: React.FC = () => {
   const { toast } = useToast();
   const { t } = useI18n();
-  const { focusSession } = usePlayerContext();
-  const [showFocusSessionModal, setShowFocusSessionModal] = useState(false);
 
   const currentVisualMode = useVisualMode();
 
@@ -191,17 +188,6 @@ const App: React.FC = () => {
     preloadSearchModal();
     setShowSearch(true);
   }, [preloadSearchModal]);
-
-  const handleCloseFocusModal = useCallback(() => {
-    setShowFocusSessionModal(false);
-  }, []);
-
-  const handleFocusSessionComplete = useCallback((shouldPause?: boolean) => {
-    setShowFocusSessionModal(false);
-    if (shouldPause && pause) {
-      pause();
-    }
-  }, [pause]);
 
   const handleOpenPlaylist = useCallback(() => {
     preloadPlaylistPanel();
@@ -690,20 +676,8 @@ const App: React.FC = () => {
           } : null}
           isPlaying={playState === PlayState.PLAYING}
           audioElement={audioRef.current}
-          focusSession={focusSession}
-          onToggleFocusSession={() => setShowFocusSessionModal(true)}
         />
       )}
-
-      {/* Focus Session Modal */}
-      <FocusSessionModal
-        isOpen={showFocusSessionModal}
-        onClose={handleCloseFocusModal}
-        onSessionComplete={handleFocusSessionComplete}
-        isActive={focusSession?.isActive}
-        remainingTime={focusSession?.remainingTime || 1500}
-        initialDuration={focusSession?.remainingTime || 1500}
-      />
 
       {/* Search Modal - Always rendered to preserve state, visibility handled internally */}
       {(hasOpenedSearch || showSearch) && (
