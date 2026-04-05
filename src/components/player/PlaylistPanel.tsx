@@ -195,9 +195,11 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
         setScrollTop(e.currentTarget.scrollTop);
     };
 
+    const queueIds = useMemo(() => queue.map(s => s.id), [queue]);
+
     const { virtualItems, totalHeight, startOffset } = useMemo(() => {
         const totalHeight = queue.length * ITEM_HEIGHT;
-        const containerHeight = 600; // Approx max height
+        const containerHeight = 600;
 
         let startIndex = Math.floor(scrollTop / ITEM_HEIGHT);
         let endIndex = Math.ceil((scrollTop + containerHeight) / ITEM_HEIGHT);
@@ -218,7 +220,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
             totalHeight,
             startOffset: startIndex * ITEM_HEIGHT
         };
-    }, [queue, scrollTop]);
+    }, [queue, scrollTop, queueIds]);
 
     return (
         <>
@@ -231,7 +233,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                         absolute top-20 -right-8 z-50
                         w-[340px] 
                         bg-black/10 backdrop-blur-[100px] saturate-150
-                        rounded-[32px] 
+                        rounded-2xl
                         shadow-[0_20px_50px_rgba(0,0,0,0.3)] 
                         border border-white/5
                         flex flex-col overflow-hidden
@@ -313,6 +315,10 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                         ref={listRef}
                         onScroll={handleScroll}
                         className="flex-1 overflow-y-auto playlist-scrollbar px-2 py-2 relative"
+                        style={{
+                          maskImage: 'linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)',
+                          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)',
+                        }}
                     >
                         {queue.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-32 text-white/30 space-y-2">
@@ -532,4 +538,12 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
     );
 };
 
-export default PlaylistPanel;
+export default React.memo(PlaylistPanel, (prev, next) => {
+    return (
+        prev.isOpen === next.isOpen &&
+        prev.currentSongId === next.currentSongId &&
+        prev.accentColor === next.accentColor &&
+        prev.queue.length === next.queue.length &&
+        prev.queue.every((s, i) => s.id === next.queue[i].id)
+    );
+});

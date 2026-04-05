@@ -239,6 +239,32 @@ export const usePlayer = ({
     setCurrentTime(Number.isFinite(value) ? value : 0);
   }, []);
 
+  // 60fps time update loop via requestAnimationFrame (replaces ~4Hz timeupdate event)
+  const rafRef = useRef<number>(0);
+  const lastTimeRef = useRef<number>(-1);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const tick = () => {
+      if (!audio.paused && !isSeekingRef.current) {
+        const value = audio.currentTime;
+        if (value !== lastTimeRef.current) {
+          lastTimeRef.current = value;
+          setCurrentTime(Number.isFinite(value) ? value : 0);
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
   const handleLoadedMetadata = useCallback(() => {
     if (!audioRef.current) return;
     const value = audioRef.current.duration;
@@ -378,9 +404,7 @@ export const usePlayer = ({
 
   const mergeLyricsWithMetadata = useCallback(
     (result: { lrc: string; yrc?: string; tLrc?: string; metadata: string[] }) => {
-      const parsed = parseLyrics(result.lrc, result.tLrc, {
-        yrcContent: result.yrc,
-      });
+      const parsed = parseLyrics(result.lrc);
       const metadataCount = result.metadata.length;
       const metadataLines = result.metadata.map((text, idx) => ({
         time: -0.1 * (metadataCount - idx),

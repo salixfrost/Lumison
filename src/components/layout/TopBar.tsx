@@ -7,6 +7,8 @@ import LanguageSwitcher from "../ui/LanguageSwitcher";
 import FocusSessionModal from "../modals/FocusSessionModal";
 import { useI18n } from "../../contexts/I18nContext";
 import { Window } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
+import { generateLyricsWithAI, translateLyricsWithAI, isAIAvailable } from "../../services/lyrics/aiLyrics";
 
 interface TopBarProps {
   disabled?: boolean;
@@ -60,6 +62,9 @@ const TopBar: React.FC<TopBarProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFocusSessionModal, setShowFocusSessionModal] = useState(false);
   const [isTopBarActive, setIsTopBarActive] = useState(false);
+  const [isExhibitionMode, setIsExhibitionMode] = useState(false);
+  const [aiAction, setAiAction] = useState<"generate" | "translate" | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settingsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -177,6 +182,75 @@ const TopBar: React.FC<TopBarProps> = ({
     setShowFocusSessionModal(true);
   }, []);
 
+  const handleExhibitionMode = useCallback(async () => {
+    try {
+      if (isExhibitionMode) {
+        await invoke("exit_exhibition_mode");
+        setIsExhibitionMode(false);
+      } else {
+        await invoke("enter_exhibition_mode");
+        setIsExhibitionMode(true);
+      }
+    } catch (e) {
+      console.error("Exhibition mode failed:", e);
+    }
+  }, [isExhibitionMode]);
+
+  const handleMultiScreen = useCallback(async () => {
+    try {
+      await invoke("create_output_window", {
+        label: `output-${Date.now()}`,
+        monitorIndex: null,
+      });
+    } catch (e) {
+      console.error("Multi-screen failed:", e);
+    }
+  }, []);
+
+  const handleAudioCapture = useCallback(async () => {
+    try {
+      await invoke("start_audio_capture", {
+        deviceId: null,
+        sampleRate: null,
+      });
+    } catch (e) {
+      console.error("Audio capture failed:", e);
+    }
+  }, []);
+
+  const handleAIGenerate = useCallback(async () => {
+    if (!isAIAvailable()) return;
+    setAiLoading(true);
+    try {
+      const result = await generateLyricsWithAI(
+        currentSong?.title || "",
+        currentSong?.artist || "",
+      );
+      if (result) {
+        console.log("[AI Lyrics] Generated:", result);
+      }
+    } catch (e) {
+      console.error("AI generate failed:", e);
+    } finally {
+      setAiLoading(false);
+    }
+  }, [currentSong?.title, currentSong?.artist]);
+
+  const handleAITranslate = useCallback(async () => {
+    if (!isAIAvailable()) return;
+    setAiLoading(true);
+    try {
+      const result = await translateLyricsWithAI("", "Chinese");
+      if (result) {
+        console.log("[AI Lyrics] Translated:", result);
+      }
+    } catch (e) {
+      console.error("AI translate failed:", e);
+    } finally {
+      setAiLoading(false);
+    }
+  }, []);
+
   const formatFocusTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -292,7 +366,7 @@ const TopBar: React.FC<TopBarProps> = ({
           <div className="relative" ref={settingsContainerRef} onPointerDown={(e) => e.stopPropagation()}>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${isSettingsOpen ? "text-white bg-white/20 scale-110" : "text-white/80"
+              className={`w-11 h-11 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center transition-all duration-300 ease-out shadow-sm hover:scale-110 active:scale-95 ${isSettingsOpen ? "text-white bg-white/20 scale-110" : "text-white/80"
                 }`}
               title={t("topBar.settings")}
               aria-label={t("topBar.settings")}
@@ -379,6 +453,55 @@ const TopBar: React.FC<TopBarProps> = ({
 
                   <div className="h-px bg-white/10 my-1" />
 
+                  {/* Advanced Features */}
+                  <div className="space-y-2">
+                    <label className="text-white/70 text-xs">{t("topBar.lab") || "Lab"}</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={handleExhibitionMode}
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 ease-out hover:scale-105 active:scale-95 ${
+                          isExhibitionMode
+                            ? 'bg-white/20 text-white shadow-lg'
+                            : 'bg-white/5 text-white/80 hover:bg-white/10'
+                        }`}
+                      >
+                        {isExhibitionMode ? t("advanced.exitExhibition") : t("advanced.exhibitionMode")}
+                      </button>
+                      <button
+                        onClick={handleMultiScreen}
+                        className="px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10"
+                      >
+                        {t("advanced.multiScreen")}
+                      </button>
+                      <button
+                        onClick={handleAudioCapture}
+                        className="px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10"
+                      >
+                        {t("advanced.audioCapture")}
+                      </button>
+                      {isAIAvailable() && (
+                        <div className="col-span-2 flex gap-2">
+                          <button
+                            onClick={handleAIGenerate}
+                            disabled={aiLoading}
+                            className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10 disabled:opacity-50"
+                          >
+                            {aiLoading ? t("advanced.aiGenerating") : t("advanced.aiGenerate")}
+                          </button>
+                          <button
+                            onClick={handleAITranslate}
+                            disabled={aiLoading}
+                            className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10 disabled:opacity-50"
+                          >
+                            {aiLoading ? t("advanced.aiTranslating") : t("advanced.aiTranslate")}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-white/10 my-1" />
+
                   {/* About Button */}
                   <button
                     onClick={handleAboutClick}
@@ -397,7 +520,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* Minimize Button */}
             <button
               onClick={handleMinimize}
-              className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
+              className="w-11 h-11 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
               title={t('topBar.minimize')}
               aria-label={t('topBar.minimize')}
             >
@@ -407,7 +530,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* Fullscreen Button */}
             <button
               onClick={toggleFullscreen}
-              className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
+              className="w-11 h-11 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
               title={isFullscreen ? t("topBar.exitFullscreen") : t("topBar.enterFullscreen")}
               aria-label={isFullscreen ? t("topBar.exitFullscreen") : t("topBar.enterFullscreen")}
             >
@@ -417,7 +540,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* Close Button */}
             <button
               onClick={handleClose}
-              className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
+              className="w-11 h-11 rounded-full bg-white/5 backdrop-blur-xl flex items-center justify-center text-white/80 transition-all duration-300 ease-out hover:scale-110 active:scale-95"
               title={t('topBar.close')}
               aria-label={t('topBar.close')}
             >
