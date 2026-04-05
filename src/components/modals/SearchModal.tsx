@@ -69,9 +69,28 @@ const ANIMATION_STYLES = `
       0%, 100% { transform: scaleY(0.4); opacity: 0.8; }
       50% { transform: scaleY(1.0); opacity: 1; }
   }
+  @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+  }
   .macos-modal-in { animation: modal-in 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; will-change: transform, opacity; }
   .macos-modal-out { animation: modal-out 0.15s cubic-bezier(0.32, 0.72, 0, 1) forwards; will-change: transform, opacity; }
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
 `;
+
+const SkeletonRow: React.FC = () => (
+  <div className="flex items-center gap-3 p-3 rounded-[10px]">
+    <div className="w-10 h-10 rounded-[6px] skeleton-shimmer shrink-0" />
+    <div className="flex-1 flex flex-col gap-2">
+      <div className="h-4 w-3/5 rounded skeleton-shimmer" />
+      <div className="h-3 w-2/5 rounded skeleton-shimmer" />
+    </div>
+  </div>
+);
 
 const SearchModal: React.FC<SearchModalProps> = ({
   isOpen,
@@ -533,6 +552,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
                           ? t("search.language") || "语言"
                           : t("search.archive") || "Archive"
                 }
+                aria-describedby="search-helper-text"
                 className="
                           w-full pl-12 pr-4 py-3.5
                           bg-black/20 hover:bg-black/30 focus:bg-black/40
@@ -544,6 +564,18 @@ const SearchModal: React.FC<SearchModalProps> = ({
                           shadow-inner
                       "
               />
+              <div id="search-helper-text" className="mt-1.5 text-xs text-white/30 text-center">
+                {search.activeTab === "queue"
+                  ? (t("search.filterQueueHint") || "Filter songs in your playlist")
+                  : search.onlineSource === "netease"
+                    ? (t("search.neteaseHint") || "Search Netease Cloud Music library")
+                    : search.onlineSource === "album"
+                      ? (t("search.albumHint") || "Search for albums by artist or title")
+                      : search.onlineSource === "language"
+                        ? (t("search.languageHint") || "Browse songs by language")
+                        : (t("search.archiveHint") || "Search Internet Archive free music collection")
+                }
+              </div>
             </div>
 
             {/* Provider Toggle (Only shown for Online tab) */}
@@ -717,9 +749,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
                   {/* Loading State */}
                   {search.showNeteaseLoading && (
-                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
-                      <span className="text-base font-medium">{t("search.searching")}</span>
+                    <div className="flex flex-col gap-1 py-2">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonRow key={i} />
+                      ))}
                     </div>
                   )}
 
@@ -845,9 +878,13 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
                       {/* Loading Indicator */}
                       {search.neteaseProvider.hasMore && (
-                        <div className="py-6 flex items-center justify-center">
+                        <div className="py-3 flex items-center justify-center">
                           {search.neteaseProvider.isLoading ? (
-                            <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+                            <div className="flex flex-col gap-2 w-full">
+                              {Array.from({ length: 3 }).map((_, i) => (
+                                <SkeletonRow key={i} />
+                              ))}
+                            </div>
                           ) : (
                             <div className="text-white/20 text-xs">
                               {t("search.scrollForMore")}
@@ -870,9 +907,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     </div>
                   )}
                   {search.albumIsLoading && search.albumResults.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
-                      <span className="text-base font-medium">{t("search.searching")}</span>
+                    <div className="flex flex-col gap-1 py-2">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonRow key={i} />
+                      ))}
                     </div>
                   )}
                   {!search.albumHasSearched && search.albumResults.length === 0 && (
@@ -903,8 +941,12 @@ const SearchModal: React.FC<SearchModalProps> = ({
                         </div>
                       ))}
                       {search.albumIsLoading && (
-                        <div className="py-6 flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+                        <div className="py-3 flex items-center justify-center">
+                          <div className="flex flex-col gap-2 w-full">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                              <SkeletonRow key={i} />
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -922,9 +964,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     </div>
                   )}
                   {search.languageIsLoading && search.languageResults.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
-                      <span className="text-base font-medium">{t("search.searching")}</span>
+                    <div className="flex flex-col gap-1 py-2">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonRow key={i} />
+                      ))}
                     </div>
                   )}
                   {!search.languageHasSearched && search.languageResults.length === 0 && (
@@ -969,9 +1012,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     </div>
                   )}
                   {search.showArchiveLoading && (
-                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                      <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mb-4"></div>
-                      <span className="text-base font-medium">{t("search.searching")}</span>
+                    <div className="flex flex-col gap-1 py-2">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonRow key={i} />
+                      ))}
                     </div>
                   )}
                   {search.showArchiveInitial && (
@@ -1081,8 +1125,12 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
                       {/* Loading Indicator for IA */}
                       {search.archiveProvider.isLoading && (
-                        <div className="py-6 flex items-center justify-center">
-                          <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+                        <div className="py-3 flex items-center justify-center">
+                          <div className="flex flex-col gap-2 w-full">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                              <SkeletonRow key={i} />
+                            ))}
+                          </div>
                         </div>
                       )}
                     </>

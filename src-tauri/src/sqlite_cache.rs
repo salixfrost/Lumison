@@ -278,3 +278,18 @@ pub async fn list_cached_keys(app: tauri::AppHandle) -> Result<Vec<String>, Stri
 
     Ok(keys)
 }
+
+#[tauri::command]
+pub async fn clear_cached_images(app: tauri::AppHandle) -> Result<(), String> {
+    let cache_path = app.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?
+        .join("cache.db");
+
+    let cache = SqliteCache::new(cache_path, 200)
+        .map_err(|e| format!("Failed to open cache: {}", e))?;
+
+    cache.clear()
+        .map_err(|e| format!("Failed to clear cache: {}", e))?;
+
+    Ok(())
+}

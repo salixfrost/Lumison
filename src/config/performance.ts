@@ -13,11 +13,20 @@ export const PERFORMANCE_CONFIG = {
       slow: { tension: 260, friction: 32 },
       smooth: { tension: 200, friction: 30 },
     },
-    // Transition durations
+    // Transition durations (aligned with UI/UX Pro Max guidelines)
     transition: {
-      fast: 200,
-      normal: 300,
-      slow: 500,
+      micro: 150,    // Tap feedback, small state changes
+      fast: 200,     // Hover states, icon transitions
+      normal: 300,   // Standard UI transitions (modals, panels)
+      slow: 400,     // Complex transitions (page changes)
+      verySlow: 500, // Auto-hide timers, background fades
+    },
+    // Easing curves
+    easing: {
+      easeOut: 'cubic-bezier(0.2, 0.8, 0.2, 1)',   // Entering animations
+      easeIn: 'cubic-bezier(0.32, 0.72, 0, 1)',    // Exiting animations
+      spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy interactions
+      smooth: 'cubic-bezier(0.25, 0.1, 0.25, 1)',  // Color/background transitions
     },
   },
 

@@ -1,15 +1,19 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 
 interface ShaderBackgroundProps {
   isPlaying?: boolean;
   colors?: string[];
-  shaderMode?: 'melt' | 'fluid' | 'gradient';
+  shaderMode?: 'melt' | 'fluid' | 'gradient' | 'wave' | 'starfield' | 'lava' | 'rainbowVortex';
 }
 
 export const VISUAL_MODE_LABELS = {
   melt: '70s Melt',
   fluid: 'Fluid Noise',
   gradient: 'Gradient',
+  wave: 'Ocean Wave',
+  starfield: 'Starfield',
+  lava: 'Lava Lamp',
+  rainbowVortex: 'Rainbow Vortex',
 } as const;
 
 type VisualMode = keyof typeof VISUAL_MODE_LABELS;
@@ -19,7 +23,8 @@ const LOCAL_STORAGE_KEY = 'lumison-visual-mode';
 const getStoredVisualMode = (): VisualMode => {
   if (typeof window === 'undefined') return 'gradient';
   const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (stored === 'melt' || stored === 'fluid' || stored === 'gradient') return stored;
+  const validModes: VisualMode[] = ['melt', 'fluid', 'gradient', 'wave', 'starfield', 'lava', 'rainbowVortex'];
+  if (validModes.includes(stored as VisualMode)) return stored as VisualMode;
   return 'gradient';
 };
 
@@ -283,7 +288,7 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    const fragmentShaderSource = 
+    const fragmentShaderSource =
       shaderMode === 'fluid' ? fluidFragmentShader :
       shaderMode === 'gradient' ? gradientFragmentShader :
       meltFragmentShader;
@@ -345,14 +350,24 @@ const ShaderBackground: React.FC<ShaderBackgroundProps> = ({
     const iColor4Location = gl.getUniformLocation(program, 'iColor4');
 
     const parseColor = (colorStr: string): [number, number, number] => {
-      const match = colorStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-      if (match) {
+      const rgbMatch = colorStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (rgbMatch) {
         return [
-          parseInt(match[1]) / 255,
-          parseInt(match[2]) / 255,
-          parseInt(match[3]) / 255
+          parseInt(rgbMatch[1]) / 255,
+          parseInt(rgbMatch[2]) / 255,
+          parseInt(rgbMatch[3]) / 255
         ];
       }
+
+      const hexMatch = colorStr.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+      if (hexMatch) {
+        return [
+          parseInt(hexMatch[1], 16) / 255,
+          parseInt(hexMatch[2], 16) / 255,
+          parseInt(hexMatch[3], 16) / 255
+        ];
+      }
+
       return [0.5, 0.3, 0.7];
     };
 

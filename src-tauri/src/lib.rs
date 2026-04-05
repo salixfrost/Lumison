@@ -7,28 +7,12 @@ mod mobile;
 pub use mobile::*;
 
 mod sqlite_cache;
+mod features;
 
 use std::process::Command;
 
 #[tauri::command]
 fn open_external_url(url: String) -> Result<(), String> {
-
-#[tauri::command]
-fn write_audio_tags(options: String) -> Result<String, String> {
-    let client = reqwest::blocking::Client::new();
-    let response = client
-        .post("http://127.0.0.1:28883/tag")
-        .header("Content-Type", "application/json")
-        .body(options)
-        .send()
-        .map_err(|e| e.to_string())?;
-    
-    if response.status().is_success() {
-        Ok("OK".to_string())
-    } else {
-        Err(format!("HTTP {}", response.status()))
-    }
-}
     #[cfg(target_os = "windows")]
     {
         Command::new("cmd")
@@ -58,6 +42,23 @@ fn write_audio_tags(options: String) -> Result<String, String> {
 
     #[allow(unreachable_code)]
     Err("unsupported platform".to_string())
+}
+
+#[tauri::command]
+fn write_audio_tags(options: String) -> Result<String, String> {
+    let client = reqwest::blocking::Client::new();
+    let response = client
+        .post("http://127.0.0.1:28883/tag")
+        .header("Content-Type", "application/json")
+        .body(options)
+        .send()
+        .map_err(|e| e.to_string())?;
+
+    if response.status().is_success() {
+        Ok("OK".to_string())
+    } else {
+        Err(format!("HTTP {}", response.status()))
+    }
 }
 
 pub type SetupHook = Box<dyn FnOnce(&mut tauri::App) -> Result<(), Box<dyn std::error::Error>> + Send>;
@@ -90,7 +91,16 @@ impl AppBuilder {
                 sqlite_cache::get_cached_image,
                 sqlite_cache::put_cached_image,
                 sqlite_cache::delete_cached_image,
-                sqlite_cache::list_cached_keys
+                sqlite_cache::list_cached_keys,
+                sqlite_cache::clear_cached_images,
+                features::list_audio_devices,
+                features::start_audio_capture,
+                features::stop_audio_capture,
+                features::list_capture_sessions,
+                features::get_available_monitors,
+                features::create_output_window,
+                features::enter_exhibition_mode,
+                features::exit_exhibition_mode,
             ])
             .setup(move |app| {
                 if let Some(setup) = setup {

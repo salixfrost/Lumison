@@ -18,13 +18,10 @@ serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled"] }
 hex = "0.4"
 base64 = "0.22"
+reqwest = { version = "0.12", features = ["blocking"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
-
-# Future dependencies for system-level features:
-# windows = { version = "0.58", features = ["Win32_Media_Audio"] }  # For WASAPI
-# cpal = "0.15"  # Cross-platform audio I/O (alternative to WASAPI)
 
 [features]
 default = ["custom-protocol"]

@@ -297,40 +297,37 @@ export default {
     gradient: "Gradient",
   },
 
-  // Search
-  search: {
-    title: "Search",
-    placeholder: "Search songs, artists...",
-    queue: "Queue",
-    online: "Online",
-    filterQueue: "Filter queue",
-    searchCloudMusic: "Search Cloud Music",
-    searchInternetArchive: "Search Internet Archive",
-    searchAlbum: "Search Albums",
-    searchLanguage: "Search by language",
-    history: "History",
-    recent: "Recent",
-    netease: "Streaming",
-    archive: "Archive",
-    album: "Album",
-    language: "Language",
-    noSongsInQueue: "No songs in queue",
-    noMatchesFound: "No matches found",
-    searching: "Searching...",
-    moreOptions: "More options",
-    scrollForMore: "Scroll for more",
-    playNow: "Play Now",
-    playNext: "Play Next",
-    addToQueue: "Add to Queue",
-  },
-
-  // Update Notification
-
   // Share
   share: {
     title: "Share Music",
     noSong: "No music is currently playing",
     copied: "Copied to clipboard!",
     failed: "Failed to share",
+  },
+
+  // Advanced Features
+  advanced: {
+    exhibitionMode: "Exhibition Mode",
+    exitExhibition: "Exit Exhibition",
+    multiScreen: "Multi-Screen Output",
+    audioCapture: "System Audio Capture",
+    aiLyrics: "AI Lyrics",
+    aiGenerate: "Generate Lyrics",
+    aiTranslate: "Translate Lyrics",
+    aiGenerating: "Generating...",
+    aiTranslating: "Translating...",
+    aiSuccess: "Lyrics generated successfully",
+    aiFailed: "AI lyrics generation failed",
+    aiTranslateSuccess: "Lyrics translated successfully",
+    aiTranslateFailed: "AI translation failed",
+    aiNotConfigured: "GEMINI_API_KEY not configured",
+    targetLanguage: "Target Language",
+    selectMonitor: "Select Monitor",
+    createWindow: "Create Window",
+    windowCreated: "Output window created",
+    windowFailed: "Failed to create window",
+    captureStarted: "Audio capture started",
+    captureFailed: "Audio capture not supported",
+    captureStopped: "Audio capture stopped",
   },
 };

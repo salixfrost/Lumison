@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useCallback, useState, useRef, useEffect, useMemo } from "react";
 import { useToast } from "./hooks/useToast";
-import ShaderBackground, { useVisualMode } from "./components/layout/ShaderBackground";
+import ShaderBackground from "./components/layout/ShaderBackground";
+import { useVisualMode } from "./hooks/useVisualMode";
 import LoadingScreen from "./components/common/LoadingScreen";
 import Onboarding from "./components/common/Onboarding";
 import Controls from "./components/player/Controls";
@@ -21,6 +22,12 @@ import { getPlatformConfig } from "./services/music/multiPlatformLyrics";
 import { PlayState, Song } from "./types";
 import { useWebViewOptimization, useOptimizedBackdropFilter } from "./hooks/useWebViewOptimization";
 import { buildSongLookupIndexMap, getSongLookupKey } from "./utils/songLookup";
+import { useResponsiveLayout } from "./hooks/useResponsiveLayout";
+import { useMobilePanelSwipe } from "./hooks/useMobilePanelSwipe";
+
+import GlassButton from "./components/ui/GlassButton";
+import GlassPanel from "./components/ui/GlassPanel";
+import IconCircleButton from "./components/ui/IconCircleButton";
 
 const importPlaylistPanel = () => import("./components/player/PlaylistPanel");
 const importSearchModal = () => import("./components/modals/SearchModal");
@@ -38,20 +45,7 @@ const App: React.FC = () => {
   const { focusSession } = usePlayerContext();
   const [showFocusSessionModal, setShowFocusSessionModal] = useState(false);
 
-  const getCurrentVisualMode = () => {
-    if (typeof window === 'undefined') return 'gradient';
-    const stored = localStorage.getItem('lumison-visual-mode');
-    if (stored === 'melt' || stored === 'fluid' || stored === 'gradient') return stored;
-    return 'gradient';
-  };
-  const [visualModeRefresh, setVisualModeRefresh] = useState(0);
-  const currentVisualMode = useMemo(() => getCurrentVisualMode(), [visualModeRefresh]);
-
-  useEffect(() => {
-    const handleVisualModeChange = () => setVisualModeRefresh(n => n + 1);
-    window.addEventListener('visual-mode-changed', handleVisualModeChange);
-    return () => window.removeEventListener('visual-mode-changed', handleVisualModeChange);
-  }, []);
+  const currentVisualMode = useVisualMode();
 
   // Performance monitoring
   usePerformanceOptimization();
@@ -138,18 +132,16 @@ const App: React.FC = () => {
   const speedIndicatorTimerRef = useRef<number | null>(null);
   const hasPrefetchedLazyChunksRef = useRef(false);
 
-  const [isMobileLayout, setIsMobileLayout] = useState(false);
-  const [activePanel, setActivePanel] = useState<"controls" | "lyrics">(
-    "controls",
-  );
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [dragOffsetX, setDragOffsetX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const mobileViewportRef = useRef<HTMLDivElement>(null);
-  const [paneWidth, setPaneWidth] = useState(() => {
-    if (typeof window === "undefined") return 0;
-    return window.innerWidth;
+  const { isMobileLayout, viewportWidth: paneWidth } = useResponsiveLayout({
+    mobileBreakpoint: 1024,
+    initialIsMobile: false,
   });
+
+  const { activePanel, setActivePanel, dragOffsetX, isDragging, handlers: swipeHandlers } = useMobilePanelSwipe({
+    enabled: isMobileLayout,
+  });
+
+  const mobileViewportRef = useRef<HTMLDivElement>(null);
   const [lyricsFontSize, setLyricsFontSize] = useState(42);
 
   // View mode state - 'default' or 'lyrics'
@@ -367,37 +359,9 @@ const App: React.FC = () => {
   }, [viewMode]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const query = window.matchMedia("(max-width: 1024px)");
-    const updateLayout = (event: MediaQueryListEvent | MediaQueryList) => {
-      setIsMobileLayout(event.matches);
-    };
-    updateLayout(query);
-    query.addEventListener("change", updateLayout);
-    return () => query.removeEventListener("change", updateLayout);
-  }, []);
-
-  useEffect(() => {
     if (!isMobileLayout) {
       setActivePanel("controls");
-      setTouchStartX(null);
-      setDragOffsetX(0);
     }
-  }, [isMobileLayout]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const updateWidth = () => {
-      setPaneWidth(window.innerWidth);
-    };
-
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    window.visualViewport?.addEventListener("resize", updateWidth);
-    return () => {
-      window.removeEventListener("resize", updateWidth);
-      window.visualViewport?.removeEventListener("resize", updateWidth);
-    };
   }, [isMobileLayout]);
 
   // Global Keyboard Registry Initialization
@@ -502,57 +466,6 @@ const App: React.FC = () => {
     console.log('[App] Song added to queue successfully');
   };
 
-  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!isMobileLayout) return;
-    setTouchStartX(event.touches[0]?.clientX ?? null);
-    setDragOffsetX(0);
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!isMobileLayout || touchStartX === null) return;
-    const currentX = event.touches[0]?.clientX;
-    if (currentX === undefined) return;
-    const deltaX = currentX - touchStartX;
-    const containerWidth = event.currentTarget.getBoundingClientRect().width;
-    const limitedDelta = Math.max(
-      Math.min(deltaX, containerWidth),
-      -containerWidth,
-    );
-    setDragOffsetX(limitedDelta);
-  };
-
-  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (!isMobileLayout || touchStartX === null) return;
-    const endX = event.changedTouches[0]?.clientX;
-    if (endX === undefined) {
-      setTouchStartX(null);
-      setDragOffsetX(0);
-      setIsDragging(false);
-      return;
-    }
-    const deltaX = endX - touchStartX;
-    const threshold = 60;
-    
-    // Add momentum based on swipe velocity
-    if (deltaX > threshold) {
-      setActivePanel("controls");
-    } else if (deltaX < -threshold) {
-      setActivePanel("lyrics");
-    } else if (Math.abs(deltaX) > 10) {
-      // Small swipe - decide based on current panel
-      if (activePanel === "lyrics" && deltaX > 0) {
-        setActivePanel("controls");
-      } else if (activePanel === "controls" && deltaX < 0) {
-        setActivePanel("lyrics");
-      }
-    }
-    
-    setTouchStartX(null);
-    setDragOffsetX(0);
-    setIsDragging(false);
-  };
-
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen()
@@ -566,18 +479,9 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleTouchCancel = () => {
-    if (isMobileLayout) {
-      setTouchStartX(null);
-      setDragOffsetX(0);
-      setIsDragging(false);
-    }
-  };
-
   const toggleIndicator = () => {
-    setActivePanel((prev) => (prev === "controls" ? "lyrics" : "controls"));
-    setDragOffsetX(0);
-    setIsDragging(false);
+    const next = activePanel === "controls" ? "lyrics" : "controls";
+    setActivePanel(next);
   };
 
   // Memoize controls section to prevent unnecessary re-renders
@@ -597,27 +501,27 @@ const App: React.FC = () => {
               {t("playlist.importLocal")}
               <input type="file" accept="audio/*" multiple className="hidden" onChange={(e) => e.target.files && handleFileChange(e.target.files)} />
             </label>
-            <button
-              type="button"
+            <GlassButton
               onClick={handleOpenSearch}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10"
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              }
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
               {t("search.title")}
-            </button>
-            <button
-              type="button"
+            </GlassButton>
+            <GlassButton
               onClick={() => setShowImportDialog(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-sm font-medium cursor-pointer transition-all duration-200 backdrop-blur-sm border border-white/10"
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4 4a4 4 0 01-5.656 5.656l-1.101-1.102" />
+                </svg>
+              }
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4 4a4 4 0 01-5.656 5.656l-1.101-1.102" />
-              </svg>
               {t("playlist.importUrl")}
-            </button>
+            </GlassButton>
           </div>
         </div>
       );
@@ -861,10 +765,7 @@ const App: React.FC = () => {
           <div
             ref={mobileViewportRef}
             className="w-full h-full overflow-hidden"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchCancel}
+            {...swipeHandlers}
           >
             <div
               className={`flex h-full ${isDragging ? "transition-none" : "transition-transform duration-300"}`}

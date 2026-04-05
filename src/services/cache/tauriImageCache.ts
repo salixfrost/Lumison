@@ -82,8 +82,11 @@ export class TauriImageCache {
       return;
     }
 
-    // Note: No clear command implemented yet, would need to be added
-    console.warn('Clear not implemented for SQLite cache');
+    try {
+      await invoke('clear_cached_images');
+    } catch (error) {
+      console.warn('Failed to clear SQLite cache:', error);
+    }
   }
 
   private async blobToBase64(blob: Blob): Promise<string> {
