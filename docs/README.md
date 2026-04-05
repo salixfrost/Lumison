@@ -21,12 +21,12 @@
 
 ### 🎵 Multi-Source Music
 - **Local Files**: MP3, FLAC, WAV, OGG, M4A, AAC, and more
-- **Online Music Search**: Search and import songs
+- **Online Music Search**: Search and import songs, albums
 - **Internet Archive**: Access archived audio collections
 - **URL Import**: Direct audio URL support
 
 ### 🎨 Visual Experience
-- **Two Background Modes**: Fluid and Melt animations
+- **Six Background Modes**: Gradient, Fluid, Melt, Wave, Halo, Swirl
 - **Dynamic Theming**: Colors adapt to album artwork
 - **Album Art Display**: Full-screen album view with progress bar
 
@@ -38,6 +38,7 @@
 ### 🖥️ Desktop Experience
 - **Cross-platform**: Windows, macOS, Linux
 - **Keyboard Shortcuts**: Full hotkey support
+- **Multi-window**: Multi-screen support
 - **System Integration**: Media session API, auto-updates
 
 ---
@@ -46,14 +47,9 @@
 
 <div align="center">
 
-### Main Player Interface
-<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/public/screenshot-main.png" alt="Main Player Interface" width="600">
+<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/images/img1.png" alt="Lumison Player" width="800">
 
-### Lyrics Display
-<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/public/screenshot-lyrics.png" alt="Lyrics Display" width="600">
-
-### Search & Import
-<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/public/screenshot-search.png" alt="Search and Import" width="600">
+<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/images/img2.png" alt="Lyrics View" width="800">
 
 </div>
 
@@ -138,7 +134,7 @@ lumison/
 │   ├── components/         # UI components
 │   │   ├── common/         # Icons, SmartImage, Toast
 │   │   ├── layout/         # TopBar, ShaderBackground
-│   │   ├── modals/         # Search, FocusSession
+│   ├── modals/         # Search, Import, About
 │   │   └── player/         # Controls, Lyrics, Playlist
 │   ├── hooks/              # Custom React hooks
 │   ├── services/           # Business logic
@@ -169,7 +165,7 @@ lumison/
 | **Animation** | @react-spring/web |
 | **Desktop** | Tauri 2.0, Rust |
 | **Testing** | Vitest |
-| **i18n** | Custom (EN/ZH) |
+| **i18n** | Custom (EN/ZH/JA) |
 
 ---
 
@@ -178,6 +174,7 @@ lumison/
 Lumison supports multiple languages:
 - English
 - 中文 (简体)
+- 日本語
 
 Switch languages in Settings → Language.
 

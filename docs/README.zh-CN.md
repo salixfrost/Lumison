@@ -24,10 +24,9 @@
 - **在线音乐搜索**: 搜索歌曲、专辑
 - **Internet Archive**: 访问存档音频收藏
 - **URL 导入**: 直接音频 URL 支持
-- **语言/风格搜索**: 支持按语言和风格筛选
 
 ### 🎨 视觉体验
-- **三种背景模式**: Gradient（渐变）、Fluid（流体）、Melt（融化）
+- **六种背景模式**: Gradient（渐变）、Fluid（流体）、Melt（融化）、Wave（波浪）、Halo（光环）、Swirl（漩涡）
 - **动态主题**: 颜色根据专辑封面自动调整
 - **专辑封面展示**: 全屏专辑视图与进度条
 
@@ -36,13 +35,10 @@
 - **自动滚动**: 平滑歌词跟踪
 - **点击跳转**: 跳转到任意歌词行
 
-### ⏱️ 专注模式
-- **番茄钟**: 可自定义时长的专注计时器
-- **预设时长**: 15/25/45/60 分钟
-
 ### 🖥️ 桌面体验
 - **跨平台**: Windows、macOS、Linux
 - **键盘快捷键**: 完整的快捷键支持
+- **多窗口支持**: 多屏幕扩展
 - **系统集成**: 媒体会话 API、自动更新
 
 ---
@@ -51,14 +47,9 @@
 
 <div align="center">
 
-### 主播放器界面
-<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/public/screenshot-main.png" alt="主播放器界面" width="600">
+<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/images/img1.png" alt="Lumison 播放器" width="800">
 
-### 歌词显示
-<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/public/screenshot-lyrics.png" alt="歌词显示" width="600">
-
-### 搜索与导入
-<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/public/screenshot-search.png" alt="搜索与导入" width="600">
+<img src="https://raw.githubusercontent.com/SalixJFrost/Lumison/main/images/img2.png" alt="歌词视图" width="800">
 
 </div>
 
@@ -143,7 +134,7 @@ lumison/
 │   ├── components/         # UI 组件
 │   │   ├── common/         # 图标、SmartImage、Toast
 │   │   ├── layout/         # TopBar、ShaderBackground
-│   │   ├── modals/         # 搜索、FocusSession
+│   │   ├── modals/         # 搜索、导入、关于
 │   │   └── player/         # 控件、歌词、播放列表
 │   ├── hooks/              # 自定义 React Hooks
 │   ├── services/           # 业务逻辑

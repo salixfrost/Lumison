@@ -7,13 +7,7 @@ interface ShaderBackgroundProps {
 }
 
 export const VISUAL_MODE_LABELS = {
-  melt: '70s Melt',
-  fluid: 'Fluid Noise',
   gradient: 'Gradient',
-  wave: 'Ocean Wave',
-  starfield: 'Starfield',
-  lava: 'Lava Lamp',
-  rainbowVortex: 'Rainbow Vortex',
 } as const;
 
 type VisualMode = keyof typeof VISUAL_MODE_LABELS;
@@ -23,7 +17,7 @@ const LOCAL_STORAGE_KEY = 'lumison-visual-mode';
 const getStoredVisualMode = (): VisualMode => {
   if (typeof window === 'undefined') return 'gradient';
   const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-  const validModes: VisualMode[] = ['melt', 'fluid', 'gradient', 'wave', 'starfield', 'lava', 'rainbowVortex'];
+  const validModes: VisualMode[] = ['gradient'];
   if (validModes.includes(stored as VisualMode)) return stored as VisualMode;
   return 'gradient';
 };

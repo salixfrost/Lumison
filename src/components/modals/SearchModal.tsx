@@ -83,8 +83,8 @@ const ANIMATION_STYLES = `
 `;
 
 const SkeletonRow: React.FC = () => (
-  <div className="flex items-center gap-3 p-3 rounded-[10px]">
-    <div className="w-10 h-10 rounded-[6px] skeleton-shimmer shrink-0" />
+  <div className="flex items-center gap-3 p-3 rounded-xl">
+    <div className="w-10 h-10 rounded-xl skeleton-shimmer shrink-0" />
     <div className="flex-1 flex flex-col gap-2">
       <div className="h-4 w-3/5 rounded skeleton-shimmer" />
       <div className="h-3 w-2/5 rounded skeleton-shimmer" />
@@ -472,7 +472,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
       {/* Backdrop - Animated */}
       <div
-        className={`absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300 ${isClosing ? "opacity-0" : "opacity-100"}`}
+        className={`absolute inset-0 bg-black/30 backdrop-blur-md transition-opacity duration-300 ${isClosing ? "opacity-0" : "opacity-100"}`}
         aria-hidden="true"
       />
 
@@ -531,9 +531,6 @@ const SearchModal: React.FC<SearchModalProps> = ({
           {/* Search Bar with Provider Toggle */}
           <div className="relative group mx-2 flex flex-col gap-3">
             <div className="relative w-full">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <SearchIcon className="w-5 h-5 text-white/40" />
-              </div>
               <input
                 id="search-input"
                 name="search"
@@ -548,13 +545,11 @@ const SearchModal: React.FC<SearchModalProps> = ({
                       ? t("search.netease") || "流媒体"
                       : search.onlineSource === "album"
                         ? t("search.album") || "专辑"
-                        : search.onlineSource === "language"
-                          ? t("search.language") || "语言"
-                          : t("search.archive") || "Archive"
+                        : t("search.archive") || "Archive"
                 }
                 aria-describedby="search-helper-text"
                 className="
-                          w-full pl-12 pr-4 py-3.5
+                          w-full pl-4 pr-4 py-3.5
                           bg-black/20 hover:bg-black/30 focus:bg-black/40
                           border border-white/5 focus:border-white/15
                           rounded-[12px]
@@ -571,9 +566,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     ? (t("search.neteaseHint") || "Search Netease Cloud Music library")
                     : search.onlineSource === "album"
                       ? (t("search.albumHint") || "Search for albums by artist or title")
-                      : search.onlineSource === "language"
-                        ? (t("search.languageHint") || "Browse songs by language")
-                        : (t("search.archiveHint") || "Search Internet Archive free music collection")
+                      : (t("search.archiveHint") || "Search Internet Archive free music collection")
                 }
               </div>
             </div>
@@ -598,15 +591,6 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     }`}
                 >
                   {t("search.album")}
-                </button>
-                <button
-                  onClick={() => search.setOnlineSource("language")}
-                  className={`px-3 sm:px-4 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${search.onlineSource === "language"
-                    ? "bg-white/15 text-white shadow-sm"
-                    : "text-white/40 hover:text-white/60"
-                    }`}
-                >
-                  {t("search.language")}
                 </button>
                 <button
                   onClick={() => search.setOnlineSource("archive")}
@@ -640,7 +624,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
                   {/* Floating Selection Background */}
                   {search.selectedIndex >= 0 && search.itemRefs.current[search.selectedIndex] && (
                     <div
-                      className="absolute left-0 right-0 bg-white/10 rounded-[10px] pointer-events-none transition-all duration-200 ease-out"
+                      className="absolute left-0 right-0 bg-white/[0.06] rounded-xl pointer-events-none transition-all duration-200 ease-out backdrop-blur-sm"
                       style={{
                         top: `${search.itemRefs.current[search.selectedIndex]?.offsetTop || 0}px`,
                         height: `${search.itemRefs.current[search.selectedIndex]?.offsetHeight || 56}px`,
@@ -662,11 +646,12 @@ const SearchModal: React.FC<SearchModalProps> = ({
                           search.openContextMenu(e, s, "queue")
                         }
                         className={`
-                                        relative z-10 group flex items-center gap-3 p-3 rounded-[10px] cursor-pointer
-                                        ${search.selectedIndex === idx ? "text-white" : "hover:bg-white/5 hover:transition-colors hover:duration-150 text-white/90"}
+                                        relative z-10 group flex items-center gap-3 p-3 rounded-xl cursor-pointer
+                                        transition-all duration-200 ease-out
+                                        ${search.selectedIndex === idx ? "text-white bg-white/[0.05]" : "hover:bg-white/[0.03] text-white/90"}
                                     `}
                       >
-                        <div className="relative w-10 h-10 rounded-[6px] bg-white/5 overflow-hidden shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-200">
+                        <div className="relative w-10 h-10 rounded-xl bg-white/5 overflow-hidden shrink-0 shadow-md group-hover:shadow-lg transition-shadow duration-200">
                           {s.coverUrl ? (
                             <SmartImage
                               src={s.coverUrl}
@@ -795,11 +780,12 @@ const SearchModal: React.FC<SearchModalProps> = ({
                               search.openContextMenu(e, track, "netease")
                             }
                             className={`
-                                            relative z-10 group flex items-center gap-3 p-3 rounded-[10px] cursor-pointer
-                                            ${search.selectedIndex === idx ? "text-white" : "hover:bg-white/5 hover:transition-colors hover:duration-150 text-white/90"}
+                                            relative z-10 group flex items-center gap-3 p-3 rounded-xl cursor-pointer
+                                            transition-all duration-200 ease-out
+                                            ${search.selectedIndex === idx ? "text-white bg-white/[0.05]" : "hover:bg-white/[0.03] text-white/90"}
                                         `}
                           >
-                            <div className="relative w-10 h-10 rounded-[6px] bg-white/5 overflow-hidden shrink-0 shadow-sm group-hover:shadow-lg transition-shadow duration-200">
+                            <div className="relative w-10 h-10 rounded-xl bg-white/5 overflow-hidden shrink-0 shadow-md group-hover:shadow-lg transition-shadow duration-200">
                               {track.coverUrl && (
                                 <SmartImage
                                   src={track.coverUrl}
@@ -949,54 +935,6 @@ const SearchModal: React.FC<SearchModalProps> = ({
                           </div>
                         </div>
                       )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Language Provider UI */}
-              {search.onlineSource === "language" && (
-                <>
-                  {search.languageHasSearched && search.languageResults.length === 0 && !search.languageIsLoading && (
-                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
-                      <span className="text-base font-medium">{t("search.noMatchesFound")}</span>
-                    </div>
-                  )}
-                  {search.languageIsLoading && search.languageResults.length === 0 && (
-                    <div className="flex flex-col gap-1 py-2">
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <SkeletonRow key={i} />
-                      ))}
-                    </div>
-                  )}
-                  {!search.languageHasSearched && search.languageResults.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-64 text-white/20">
-                      <SearchIcon className="w-12 h-12 mb-4 opacity-20" />
-                      <span className="text-base font-medium">{t("search.searchLanguage")}</span>
-                    </div>
-                  )}
-                  {search.languageResults.length > 0 && (
-                    <div className="flex flex-col gap-1">
-                      {search.languageResults.map((track, idx) => (
-                        <div
-                          key={track.id}
-                          className="flex items-center gap-3 p-3 rounded-[10px] hover:bg-white/5 cursor-pointer"
-                          onClick={() => handleLanguageSelection(idx)}
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-white/10 overflow-hidden">
-                            <SmartImage
-                              src={track.album?.picUrl?.replace("http:", "https:")}
-                              alt={track.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-white/90 truncate">{track.name}</div>
-                            <div className="text-xs text-white/40 truncate">{track.artists?.map(a => a.name).join(", ")}</div>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </>

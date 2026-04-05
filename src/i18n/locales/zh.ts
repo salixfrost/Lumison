@@ -79,6 +79,7 @@ export default {
     speed: "倍速",
     welcomeTitle: "欢迎使用 Lumison",
     searchHint: "按下 Enter 开始搜索",
+    searchOnWikipedia: "点击在维基百科搜索",
   },
 
   // 倍速设置
@@ -139,6 +140,7 @@ export default {
     addToQueue: "添加到队列",
     playNext: "下一首播放",
     filterQueue: "筛选队列...",
+    filterQueueHint: "在队列中筛选歌曲",
     searchOnline: "在线搜索...",
     noSongsInQueue: "队列中没有歌曲",
     pressEnterToSearch: "按 Enter 键搜索",
@@ -147,11 +149,12 @@ export default {
     searchYouTubeMusic: "搜索 YouTube Music",
     searchInternetArchive: "搜索 Internet Archive",
     searchAlbum: "搜索专辑",
-    searchLanguage: "按语言搜索（欧美/日语/韩语/华语）",
     scrollForMore: "向下滚动加载更多",
     moreOptions: "更多选项",
     album: "专辑",
-    language: "语言",
+    neteaseHint: "搜索网易云音乐库",
+    albumHint: "按艺术家或专辑名搜索",
+    archiveHint: "搜索 Internet Archive 免费音乐库",
   },
 
   // 歌词
@@ -247,6 +250,7 @@ export default {
     import: "导入",
     search: "搜索",
     settings: "设置",
+    lab: "实验室",
     theme: "主题",
     language: "语言",
     about: "关于",
@@ -277,8 +281,6 @@ export default {
   },
 
   visualMode: {
-    melt: "70s 波动",
-    fluid: "流体噪声",
     gradient: "渐变",
   },
 

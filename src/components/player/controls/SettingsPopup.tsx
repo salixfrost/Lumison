@@ -4,7 +4,6 @@ import { PlayMode } from "../../../types";
 import { useI18n } from "../../../contexts/I18nContext";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { FastForwardIcon, ShuffleIcon } from "../../common/Icons";
-import { VISUAL_MODE_LABELS, onVisualModeChange } from "../../layout/ShaderBackground";
 
 interface SettingsPopupProps {
   style: any;
@@ -31,7 +30,9 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
   const { theme } = useTheme();
 
   const speedPresets = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const volumePresets = [0, 0.25, 0.5, 0.75, 1];
   const [showPresets, setShowPresets] = React.useState(false);
+  const [showVolumePresets, setShowVolumePresets] = React.useState(false);
 
   const getCurrentMode = () => {
     if (typeof window === 'undefined') return 'gradient';
@@ -137,14 +138,37 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
       </div>
 
       <div className="w-full flex items-center gap-3">
-        <button
-          onClick={() => onVolumeChange(volume === 0 ? 0.5 : 0)}
-          className={`p-2 rounded-full transition-all duration-150 ease-out active:scale-90 hover:bg-white/10 active:bg-white/20 ${theme === 'light' ? 'text-black/70 hover:text-black' : 'text-white/70 hover:text-white'}`}
-          title={t("player.volume")}
-          aria-label={t("player.volume")}
-        >
-          {getVolumeButtonIcon()}
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowVolumePresets(!showVolumePresets)}
+            className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+          >
+            {getVolumeButtonIcon()}
+            <span className="text-sm font-bold text-white">
+              {volume === 0 ? 'Mute' : `${Math.round(volume * 100)}%`}
+            </span>
+          </button>
+
+          {showVolumePresets && (
+            <div className="absolute top-full mt-2 left-0 p-2 rounded-2xl bg-black/10 backdrop-blur-optimized saturate-150 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/5 flex flex-col gap-1 hw-accelerate">
+              {volumePresets.map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => {
+                    onVolumeChange(preset);
+                    setShowVolumePresets(false);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${Math.abs(volume - preset) < 0.01
+                    ? "bg-white text-black"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                    }`}
+                >
+                  {preset === 0 ? 'Mute' : `${Math.round(preset * 100)}%`}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="relative flex-1 h-8 flex items-center cursor-pointer group">
           <div className="absolute inset-x-0 h-1 theme-bg-overlay rounded-full group-hover:h-1.5 transition-[height] duration-200 ease-out"></div>
@@ -170,28 +194,8 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
           />
         </div>
       </div>
-
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-white/50">{t('settings.visual')}</span>
-        <div className="flex gap-1">
-          {(Object.keys(VISUAL_MODE_LABELS) as Array<keyof typeof VISUAL_MODE_LABELS>).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => onVisualModeChange(mode)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                currentMode === mode
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
-              }`}
-            >
-              {t(`visualMode.${mode}`)}
-            </button>
-          ))}
-        </div>
-      </div>
     </animated.div>
   );
 };
 
-export { onVisualModeChange };
 export default SettingsPopup;

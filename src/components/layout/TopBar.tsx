@@ -7,7 +7,6 @@ import LanguageSwitcher from "../ui/LanguageSwitcher";
 import { useI18n } from "../../contexts/I18nContext";
 import { Window } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
-import { generateLyricsWithAI, translateLyricsWithAI, isAIAvailable } from "../../services/lyrics/aiLyrics";
 
 interface TopBarProps {
   disabled?: boolean;
@@ -29,8 +28,8 @@ interface TopBarProps {
 // 常量提取到组件外部
 const TOPBAR_HIDE_DELAY = 10000; // 10秒后自动收起
 const SLIDER_CONFIG = {
-  min: 24,
-  max: 80,
+  min: 30,
+  max: 60,
   step: 2,
 } as const;
 
@@ -53,8 +52,6 @@ const TopBar: React.FC<TopBarProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTopBarActive, setIsTopBarActive] = useState(false);
   const [isExhibitionMode, setIsExhibitionMode] = useState(false);
-  const [aiAction, setAiAction] = useState<"generate" | "translate" | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settingsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -201,39 +198,6 @@ const TopBar: React.FC<TopBarProps> = ({
       });
     } catch (e) {
       console.error("Audio capture failed:", e);
-    }
-  }, []);
-
-  const handleAIGenerate = useCallback(async () => {
-    if (!isAIAvailable()) return;
-    setAiLoading(true);
-    try {
-      const result = await generateLyricsWithAI(
-        currentSong?.title || "",
-        currentSong?.artist || "",
-      );
-      if (result) {
-        console.log("[AI Lyrics] Generated:", result);
-      }
-    } catch (e) {
-      console.error("AI generate failed:", e);
-    } finally {
-      setAiLoading(false);
-    }
-  }, [currentSong?.title, currentSong?.artist]);
-
-  const handleAITranslate = useCallback(async () => {
-    if (!isAIAvailable()) return;
-    setAiLoading(true);
-    try {
-      const result = await translateLyricsWithAI("", "Chinese");
-      if (result) {
-        console.log("[AI Lyrics] Translated:", result);
-      }
-    } catch (e) {
-      console.error("AI translate failed:", e);
-    } finally {
-      setAiLoading(false);
     }
   }, []);
 
@@ -409,31 +373,6 @@ const TopBar: React.FC<TopBarProps> = ({
 
                   {/* Language Switcher */}
                   <LanguageSwitcher variant="settings" />
-
-                  <div className="h-px bg-white/10 my-1" />
-
-                  {/* Advanced Features */}
-                  {isAIAvailable() && (
-                    <div className="space-y-2">
-                      <label className="text-white/70 text-xs">{t("topBar.lab") || "Lab"}</label>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleAIGenerate}
-                          disabled={aiLoading}
-                          className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10 disabled:opacity-50"
-                        >
-                          {aiLoading ? t("advanced.aiGenerating") : t("advanced.aiGenerate")}
-                        </button>
-                        <button
-                          onClick={handleAITranslate}
-                          disabled={aiLoading}
-                          className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-white/5 text-white/80 transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:bg-white/10 disabled:opacity-50"
-                        >
-                          {aiLoading ? t("advanced.aiTranslating") : t("advanced.aiTranslate")}
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   <div className="h-px bg-white/10 my-1" />
 

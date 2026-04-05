@@ -42,13 +42,13 @@ const AboutDialog: React.FC<AboutDialogProps> = ({ isOpen, onClose }) => {
 
             {/* Shared backdrop */}
             <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-all duration-300 hover:bg-black/25 active:bg-black/30 pointer-events-auto cursor-pointer"
+                className="absolute inset-0 bg-black/20 backdrop-blur-sm pointer-events-auto cursor-pointer"
                 onClick={onClose}
             />
 
             {/* Modal */}
             <div
-                className="dialog-in relative w-full max-w-[380px] bg-black/40 backdrop-blur-2xl saturate-150 border border-white/10 rounded-[32px] shadow-[0_30px_80px_rgba(0,0,0,0.45)] overflow-hidden ring-1 ring-white/5 pointer-events-auto"
+                className="dialog-in relative w-full max-w-[380px] bg-black/40 backdrop-blur-2xl saturate-150 rounded-[32px] shadow-[0_30px_80px_rgba(0,0,0,0.45)] overflow-hidden ring-1 ring-white/5 pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Decorative Gradient Blob */}

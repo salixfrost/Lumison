@@ -79,6 +79,7 @@ export default {
     speed: "Speed",
     welcomeTitle: "Welcome to Lumison",
     searchHint: "Press Enter to search",
+    searchOnWikipedia: "Click to search on Wikipedia",
   },
 
   // Speed Settings
@@ -139,6 +140,7 @@ export default {
     addToQueue: "Add to Queue",
     playNext: "Play Next",
     filterQueue: "Filter queue...",
+    filterQueueHint: "Filter songs in your playlist",
     searchOnline: "Search online...",
     noSongsInQueue: "No songs in queue",
     pressEnterToSearch: "to search",
@@ -147,11 +149,12 @@ export default {
     searchYouTubeMusic: "Search YouTube Music",
     searchInternetArchive: "Search Internet Archive",
     searchAlbum: "Search Albums",
-    searchLanguage: "Search by language (English/Japanese/Korean/Chinese)",
     scrollForMore: "Scroll for more",
     moreOptions: "More options",
     album: "Album",
-    language: "Language",
+    neteaseHint: "Search Netease Cloud Music library",
+    albumHint: "Search for albums by artist or title",
+    archiveHint: "Search Internet Archive free music collection",
   },
 
   // Lyrics
@@ -247,6 +250,7 @@ export default {
     import: "Import",
     search: "Search",
     settings: "Settings",
+    lab: "Lab",
     theme: "Theme",
     language: "Language",
     about: "About",
@@ -277,8 +281,6 @@ export default {
   },
 
   visualMode: {
-    melt: "70s Melt",
-    fluid: "Fluid Noise",
     gradient: "Gradient",
   },
 

@@ -20,11 +20,10 @@
 ## ✨ Features
 
 - **Multi-Source Music**: Local files, Online Music Search (Netease), Internet Archive, Album Search
-- **Immersive Visuals**: Dynamic shader background (Gradient, Fluid, Melt modes)
+- **Immersive Visuals**: Dynamic shader background (Gradient, Fluid, Melt, Wave, Halo, Swirl modes)
 - **Synchronized Lyrics**: Word-by-word highlighting with auto-scroll
-- **Desktop Experience**: Tauri 2.0 with keyboard shortcuts and auto-updates
-- **Focus Mode**: Pomodoro-style focus session timer
-- **Internationalization**: English and Chinese language support
+- **Desktop Experience**: Tauri 2.0 with keyboard shortcuts and multi-window support
+- **Internationalization**: English, Chinese, and Japanese language support
 
 ---
 
@@ -32,9 +31,9 @@
 
 <div align="center">
 
-<img src="public/screenshot-main.png" alt="Main Player Interface" width="600">
+<img src="images/img1.png" alt="Lumison Player" width="800">
 
-<img src="public/screenshot-lyrics.png" alt="Lyrics Display" width="600">
+<img src="images/img2.png" alt="Lyrics View" width="800">
 
 </div>
 
